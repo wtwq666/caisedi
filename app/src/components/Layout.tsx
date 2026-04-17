@@ -1,30 +1,30 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/store';
+import { useMemo } from 'react';
+import { useAuthStore, useTrainingStore } from '@/store';
 import { Button } from '@/components/ui/button';
-import {
-  BookOpen,
-  Store,
-  TrendingUp,
-  Users,
-  GraduationCap,
-  Image,
-  LogOut,
-  User
-} from 'lucide-react';
+import { BrandMark } from '@/components/BrandMark';
+import { LogOut, User, Settings } from 'lucide-react';
+import { getIconForTemplateSlug } from '@/lib/templateSlugIcons';
+import { defaultTrainingTemplates } from '@/data/defaultTemplates';
 
-const navItems = [
-  { id: 'fabric-training', label: '面料知识培训', icon: BookOpen, path: '/fabric-training' },
-  { id: 'store-manual', label: '店铺运营手册', icon: Store, path: '/store-manual' },
-  { id: 'sales-training', label: '销售能力培训', icon: TrendingUp, path: '/sales-training' },
-  { id: 'manager-manual', label: '店长管理手册', icon: Users, path: '/manager-manual' },
-  { id: 'mentor-manual', label: '带教手册', icon: GraduationCap, path: '/mentor-manual' },
-  { id: 'store-image', label: '店铺形象', icon: Image, path: '/store-image' },
-];
+const slugOrder = defaultTrainingTemplates.map((t) => t.slug);
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const templates = useTrainingStore((s) => s.templates);
+
+  const sorted = useMemo(() => {
+    return [...templates].sort((a, b) => {
+      const ia = slugOrder.indexOf(a.slug);
+      const ib = slugOrder.indexOf(b.slug);
+      if (ia === -1 && ib === -1) return a.name.localeCompare(b.name, 'zh-CN');
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+  }, [templates]);
 
   const handleLogout = () => {
     logout();
@@ -32,48 +32,62 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 顶部导航栏 */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-b from-brand-yellow-wash via-brand-yellow-surface to-brand-yellow-soft">
+      <header className="bg-brand-yellow border-b border-brand-yellow-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">E</span>
-              </div>
-              <h1 className="text-lg font-semibold text-gray-900">企业信息管理系统</h1>
-            </div>
+          <div className="flex items-center justify-between gap-2 h-16 min-h-[4rem]">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow focus-visible:ring-offset-2 focus-visible:ring-offset-brand-yellow-surface shrink-0"
+            >
+              <BrandMark size="sm" />
+            </button>
 
-            {/* 导航菜单 */}
-            <nav className="hidden md:flex items-center space-x-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname.startsWith(item.path);
+            <nav className="hidden lg:flex items-center flex-wrap justify-end gap-1 max-w-[min(56rem,70vw)]">
+              {sorted.map((item) => {
+                const Icon = getIconForTemplateSlug(item.slug);
+                const path = `/t/${item.slug}`;
+                const isActive = location.pathname.startsWith(path);
                 return (
                   <button
                     key={item.id}
-                    onClick={() => navigate(item.path)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    type="button"
+                    onClick={() => navigate(path)}
+                    className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                       isActive
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        ? 'bg-brand-yellow-soft text-brand-accent'
+                        : 'text-brand-ink-soft hover:bg-brand-yellow-soft/90 hover:text-brand-ink'
                     }`}
+                    title={item.name}
                   >
-                    <Icon className="w-4 h-4" />
-                    {item.label}
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="max-w-[7rem] truncate">{item.name}</span>
                   </button>
                 );
               })}
             </nav>
 
-            {/* 用户信息 */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <User className="w-4 h-4" />
-                <span>{user?.name}</span>
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              {user?.role === 'admin' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-brand-ink-soft hover:text-brand-ink px-2"
+                  onClick={() => navigate('/admin/templates')}
+                  title="模板管理"
+                >
+                  <Settings className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">模板</span>
+                </Button>
+              )}
+              <div className="flex items-center gap-2 text-sm text-brand-ink-soft">
+                <User className="w-4 h-4 hidden sm:block" />
+                <span className="hidden sm:inline max-w-[6rem] truncate">
+                  {user?.name}
+                </span>
                 {user?.role === 'admin' && (
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
+                  <span className="px-2 py-0.5 bg-brand-yellow-soft text-brand-accent rounded-full text-xs">
                     管理员
                   </span>
                 )}
@@ -82,17 +96,16 @@ export default function Layout() {
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
-                className="text-gray-600 hover:text-gray-900"
+                className="text-brand-ink-soft hover:text-brand-ink px-2"
               >
-                <LogOut className="w-4 h-4 mr-1" />
-                退出
+                <LogOut className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">退出</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* 主内容区 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Outlet />
       </main>

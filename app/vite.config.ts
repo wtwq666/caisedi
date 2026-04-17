@@ -6,6 +6,10 @@ import { inspectAttr } from 'kimi-plugin-inspect-react'
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
+  build: {
+    // 主包含 xlsx 等依赖，体积会超过默认 500kB；仅抑制提示，非错误
+    chunkSizeWarningLimit: 1200,
+  },
   plugins: [inspectAttr(), react()],
   resolve: {
     alias: {

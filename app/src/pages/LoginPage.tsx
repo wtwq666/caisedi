@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { BrandMark } from '@/components/BrandMark';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -33,21 +34,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand-yellow via-brand-yellow-surface to-brand-gray-surface flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="flex items-center justify-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-2xl">E</span>
-          </div>
+        <div className="flex justify-center mb-8">
+          <BrandMark size="lg" vertical />
         </div>
 
-        <Card className="shadow-xl border-0">
+        <Card className="shadow-xl border-0 border-brand-gray-border/40">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              企业信息管理系统
+            <CardTitle className="text-2xl font-bold text-brand-ink">
+              知识平台登录
             </CardTitle>
-            <CardDescription className="text-gray-500">
+            <CardDescription className="text-brand-gray-muted">
               请输入您的账号和密码
             </CardDescription>
           </CardHeader>
@@ -88,15 +86,15 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-11 bg-blue-600 hover:bg-blue-700"
+                className="w-full h-11 bg-primary text-primary-foreground hover:bg-brand-yellow-hover"
                 disabled={isLoading}
               >
                 {isLoading ? '登录中...' : '登录'}
               </Button>
             </form>
 
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
-              <p className="font-medium mb-2">测试账号：</p>
+            <div className="mt-6 p-4 bg-brand-gray-surface/90 rounded-lg text-sm text-brand-gray-muted border border-brand-gray-border/60">
+              <p className="font-medium mb-2 text-brand-gray">测试账号：</p>
               <div className="space-y-1">
                 <p>管理员：admin / admin123</p>
                 <p>普通用户：user / user123</p>
@@ -105,8 +103,8 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          © 2026 企业信息管理系统 版权所有
+        <p className="text-center text-sm text-brand-gray-muted mt-6">
+          © 2026 中山 CAISEDI 服装有限公司
         </p>
       </div>
     </div>

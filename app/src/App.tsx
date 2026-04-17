@@ -1,20 +1,20 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store';
 import Layout from '@/components/Layout';
 import LoginPage from '@/pages/LoginPage';
-import FabricListPage from '@/pages/FabricListPage';
-import FabricDetailPage from '@/pages/FabricDetailPage';
-import FabricEditPage from '@/pages/FabricEditPage';
-import PlaceholderPage from '@/pages/PlaceholderPage';
+import TrainingListPage from '@/pages/TrainingListPage';
+import TrainingDetailPage from '@/pages/TrainingDetailPage';
+import TrainingEditPage from '@/pages/TrainingEditPage';
+import TemplateAdminPage from '@/pages/TemplateAdminPage';
+import HomePage from '@/pages/HomePage';
+import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 
-// 受保护路由组件
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 }
 
-// 管理员路由组件
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/login" />;
@@ -22,9 +22,17 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function LegacyFabricRedirect() {
+  const location = useLocation();
+  const suffix =
+    location.pathname.replace(/^\/fabric-training/, '') || '';
+  return <Navigate to={`/t/fabric-training${suffix}`} replace />;
+}
+
 function App() {
   return (
     <Router>
+      <Toaster richColors position="top-center" />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route
@@ -35,33 +43,37 @@ function App() {
             </ProtectedRoute>
           }
         >
-          {/* 面料知识培训 */}
-          <Route index element={<Navigate to="/fabric-training" />} />
-          <Route path="fabric-training" element={<FabricListPage />} />
-          <Route path="fabric-training/:id" element={<FabricDetailPage />} />
+          <Route index element={<HomePage />} />
+
           <Route
-            path="fabric-training/:id/edit"
+            path="t/:slug/new"
             element={
               <AdminRoute>
-                <FabricEditPage />
+                <TrainingEditPage />
               </AdminRoute>
             }
           />
           <Route
-            path="fabric-training/new"
+            path="t/:slug/:itemId/edit"
             element={
               <AdminRoute>
-                <FabricEditPage />
+                <TrainingEditPage />
+              </AdminRoute>
+            }
+          />
+          <Route path="t/:slug/:itemId" element={<TrainingDetailPage />} />
+          <Route path="t/:slug" element={<TrainingListPage />} />
+
+          <Route
+            path="admin/templates"
+            element={
+              <AdminRoute>
+                <TemplateAdminPage />
               </AdminRoute>
             }
           />
 
-          {/* 其他模块 */}
-          <Route path="store-manual" element={<PlaceholderPage title="店铺运营手册" />} />
-          <Route path="sales-training" element={<PlaceholderPage title="销售能力培训" />} />
-          <Route path="manager-manual" element={<PlaceholderPage title="店长管理手册" />} />
-          <Route path="mentor-manual" element={<PlaceholderPage title="带教手册" />} />
-          <Route path="store-image" element={<PlaceholderPage title="店铺形象" />} />
+          <Route path="fabric-training/*" element={<LegacyFabricRedirect />} />
         </Route>
       </Routes>
     </Router>
