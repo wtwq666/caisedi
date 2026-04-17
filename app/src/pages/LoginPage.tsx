@@ -34,7 +34,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-yellow via-brand-yellow-surface to-brand-gray-surface flex items-center justify-center p-4">
+    <div className="min-h-screen bg-brand-gray-surface flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <BrandMark size="lg" vertical />

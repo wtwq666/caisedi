@@ -7,7 +7,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--brand-yellow-surface));
+  background: hsl(var(--muted));
   border-radius: 4px;
 }
 

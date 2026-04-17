@@ -7,6 +7,8 @@ import TrainingDetailPage from '@/pages/TrainingDetailPage';
 import TrainingEditPage from '@/pages/TrainingEditPage';
 import TemplateAdminPage from '@/pages/TemplateAdminPage';
 import HomePage from '@/pages/HomePage';
+import ProductCatalogListPage from '@/pages/ProductCatalogListPage';
+import ProductCatalogDetailPage from '@/pages/ProductCatalogDetailPage';
 import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 
@@ -44,6 +46,9 @@ function App() {
           }
         >
           <Route index element={<HomePage />} />
+
+          <Route path="products" element={<ProductCatalogListPage />} />
+          <Route path="products/:productId" element={<ProductCatalogDetailPage />} />
 
           <Route
             path="t/:slug/new"

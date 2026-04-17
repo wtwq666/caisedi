@@ -87,7 +87,7 @@ export default function TrainingListPage() {
   return (
     <div className="space-y-5">
       {/* 芬迪黄主视觉区：标题与操作 */}
-      <section className="rounded-2xl border border-brand-yellow-border/35 bg-gradient-to-br from-brand-yellow via-brand-yellow-soft/95 to-brand-yellow-elevated/80 px-5 py-5 sm:px-6 sm:py-6 shadow-sm">
+      <section className="rounded-2xl border border-brand-yellow-border/40 bg-brand-yellow px-5 py-5 sm:px-6 sm:py-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <h2 className="text-2xl font-bold tracking-tight text-brand-ink sm:text-[1.65rem]">
@@ -167,7 +167,7 @@ export default function TrainingListPage() {
             className="group cursor-pointer overflow-hidden rounded-xl border border-brand-gray-border/95 bg-card text-card-foreground shadow-sm ring-1 ring-black/[0.035] transition-all hover:border-brand-yellow-border/55 hover:shadow-md hover:ring-brand-yellow/15"
             onClick={() => navigate(`${base}/${row.id}`)}
           >
-            <CardHeader className="pb-3 border-b border-brand-gray-border/50 bg-gradient-to-r from-brand-yellow-soft/50 to-transparent">
+            <CardHeader className="pb-3 border-b border-brand-gray-border/50 bg-muted/80">
               <div className="flex items-start justify-between">
                 <div className="w-10 h-10 bg-brand-yellow/90 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm ring-1 ring-brand-yellow-border/30">
                   <FileText className="w-5 h-5 text-brand-ink/85" />
