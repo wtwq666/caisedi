@@ -49,6 +49,7 @@ module.exports = {
           ring: "hsl(var(--sidebar-ring))",
         },
         brand: {
+          /* 命名沿用 yellow，视觉为品牌蓝（见 index.css --brand-yellow*） */
           yellow: "hsl(var(--brand-yellow) / <alpha-value>)",
           "yellow-hover": "hsl(var(--brand-yellow-hover) / <alpha-value>)",
           "yellow-soft": "hsl(var(--brand-yellow-soft) / <alpha-value>)",

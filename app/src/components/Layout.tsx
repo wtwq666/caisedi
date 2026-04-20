@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useAuthStore, useTrainingStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/BrandMark';
-import { LogOut, User, Settings, Package } from 'lucide-react';
+import { LogOut, User, Package } from 'lucide-react';
 import { getIconForTemplateSlug } from '@/lib/templateSlugIcons';
 import { defaultTrainingTemplates } from '@/data/defaultTemplates';
 
@@ -33,13 +33,13 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-brand-gray-surface">
-      <header className="bg-brand-yellow border-b border-brand-yellow-border sticky top-0 z-50">
+      <header className="bg-card border-b border-primary/10 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-2 h-16 min-h-[4rem]">
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow focus-visible:ring-offset-2 focus-visible:ring-offset-brand-gray-surface shrink-0"
+              className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background shrink-0"
             >
               <BrandMark size="sm" />
             </button>
@@ -82,18 +82,6 @@ export default function Layout() {
             </nav>
 
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-              {user?.role === 'admin' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-brand-ink-soft hover:text-brand-ink px-2"
-                  onClick={() => navigate('/admin/templates')}
-                  title="模板管理"
-                >
-                  <Settings className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">模板</span>
-                </Button>
-              )}
               <div className="flex items-center gap-2 text-sm text-brand-ink-soft">
                 <User className="w-4 h-4 hidden sm:block" />
                 <span className="hidden sm:inline max-w-[6rem] truncate">

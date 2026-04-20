@@ -12,6 +12,15 @@ export function productRowSearchText(row: ProductCatalogRow): string {
   return [
     row.articleNo,
     row.image,
+    row.seriesTheme,
+    row.season,
+    row.productName,
+    row.color,
+    row.productSeries,
+    row.fitType,
+    row.collarType,
+    row.shoulderType,
+    row.silhouette,
     row.fabricComposition,
     row.fabricTraits,
     row.sellingPoints,
@@ -26,5 +35,8 @@ export function productRowSearchText(row: ProductCatalogRow): string {
 
 export function isLikelyImageUrl(value: string): boolean {
   const v = value.trim();
-  return /^https?:\/\//i.test(v) || v.startsWith('data:image');
+  if (!v) return false;
+  if (/^https?:\/\//i.test(v) || v.startsWith('data:image')) return true;
+  if (v.startsWith('/product-catalog/')) return true;
+  return false;
 }

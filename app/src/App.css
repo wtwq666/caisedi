@@ -12,7 +12,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--brand-yellow-hover));
+  background: hsl(var(--brand-yellow) / 0.55);
   border-radius: 4px;
 }
 

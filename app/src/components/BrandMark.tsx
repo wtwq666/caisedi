@@ -50,7 +50,7 @@ export function BrandMark({
             'mt-0.5 max-w-[14rem] truncate sm:max-w-none sm:whitespace-normal',
           )}
         >
-          中山 CAISEDI 服装有限公司
+          凯施迪服装有限公司
         </div>
       )}
     </div>
@@ -70,7 +70,7 @@ export function BrandMark({
               'text-brand-gray-muted max-w-xs',
             )}
           >
-            中山 CAISEDI 服装有限公司
+            凯施迪服装有限公司
           </div>
         )}
       </div>

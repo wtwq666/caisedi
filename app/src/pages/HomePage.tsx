@@ -57,7 +57,7 @@ export default function HomePage() {
                 商品资料参考
               </h3>
               <p className="text-sm text-brand-gray mt-2 leading-relaxed">
-                凯施迪 26 春商品货号、面料与卖点等资料速查
+                凯施迪 26 夏商品货号、面料与卖点等资料速查
               </p>
             </div>
           </CardContent>

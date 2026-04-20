@@ -86,7 +86,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-11 bg-primary text-primary-foreground hover:bg-brand-yellow-hover"
+                className="w-full h-11 bg-primary text-primary-foreground hover:bg-brand-yellow-hover/95"
                 disabled={isLoading}
               >
                 {isLoading ? '登录中...' : '登录'}
@@ -104,7 +104,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-center text-sm text-brand-gray-muted mt-6">
-          © 2026 中山 CAISEDI 服装有限公司
+          © 2026 凯施迪服装有限公司
         </p>
       </div>
     </div>
