@@ -3,9 +3,10 @@ import { useMemo } from 'react';
 import { useAuthStore, useTrainingStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/BrandMark';
-import { LogOut, User, Package } from 'lucide-react';
+import { LogOut, User, Package, FolderOpen } from 'lucide-react';
 import { getIconForTemplateSlug } from '@/lib/templateSlugIcons';
 import { defaultTrainingTemplates } from '@/data/defaultTemplates';
+import { navLibrarySections } from '@/data/libraryManifest';
 
 const slugOrder = defaultTrainingTemplates.map((t) => t.slug);
 
@@ -59,6 +60,7 @@ export default function Layout() {
                 <span className="max-w-[7rem] truncate">商品资料</span>
               </button>
               {sorted.map((item) => {
+                if (item.slug !== 'fabric-training') return null;
                 const Icon = getIconForTemplateSlug(item.slug);
                 const path = `/t/${item.slug}`;
                 const isActive = location.pathname.startsWith(path);
@@ -76,6 +78,26 @@ export default function Layout() {
                   >
                     <Icon className="w-3.5 h-3.5 shrink-0" />
                     <span className="max-w-[7rem] truncate">{item.name}</span>
+                  </button>
+                );
+              })}
+              {navLibrarySections.map((section) => {
+                const path = `/library/${section.slug}`;
+                const isActive = location.pathname.startsWith(path);
+                return (
+                  <button
+                    key={section.slug}
+                    type="button"
+                    onClick={() => navigate(path)}
+                    className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                      isActive
+                        ? 'bg-brand-yellow-soft text-brand-accent'
+                        : 'text-brand-ink-soft hover:bg-brand-yellow-soft/90 hover:text-brand-ink'
+                    }`}
+                    title={section.name}
+                  >
+                    <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+                    <span className="max-w-[7rem] truncate">{section.name}</span>
                   </button>
                 );
               })}

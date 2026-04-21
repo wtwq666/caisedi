@@ -9,6 +9,8 @@ import TemplateAdminPage from '@/pages/TemplateAdminPage';
 import HomePage from '@/pages/HomePage';
 import ProductCatalogListPage from '@/pages/ProductCatalogListPage';
 import ProductCatalogDetailPage from '@/pages/ProductCatalogDetailPage';
+import LibrarySectionPage from '@/pages/LibrarySectionPage';
+import LibraryFileViewerPage from '@/pages/LibraryFileViewerPage';
 import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 
@@ -49,6 +51,11 @@ function App() {
 
           <Route path="products" element={<ProductCatalogListPage />} />
           <Route path="products/:productId" element={<ProductCatalogDetailPage />} />
+          <Route path="library/:sectionSlug" element={<LibrarySectionPage />} />
+          <Route
+            path="library/:sectionSlug/file/:fileId"
+            element={<LibraryFileViewerPage />}
+          />
 
           <Route
             path="t/:slug/new"

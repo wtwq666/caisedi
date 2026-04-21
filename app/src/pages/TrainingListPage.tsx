@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useTrainingStore, useAuthStore } from '@/store';
+import { fabricKnowledgeFiles } from '@/data/libraryManifest';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +20,7 @@ import {
   Edit,
   Trash2,
   ChevronRight,
+  Download,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -231,6 +233,45 @@ export default function TrainingListPage() {
           </Card>
         ))}
       </div>
+
+      {template.slug === 'fabric-training' && (
+        <section className="rounded-2xl border border-brand-gray-border/90 bg-card/95 px-4 py-4 sm:px-5 shadow-sm ring-1 ring-black/[0.04] space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-brand-ink">面料知识资料附件</h3>
+              <p className="text-sm text-brand-gray-muted mt-1">
+                共 {fabricKnowledgeFiles.length} 份，支持在线预览与下载
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {fabricKnowledgeFiles.map((file) => (
+              <div
+                key={file.id}
+                className="rounded-xl border border-brand-gray-border/90 bg-background px-3 py-3 flex items-center justify-between gap-3"
+              >
+                <button
+                  type="button"
+                  className="min-w-0 text-left"
+                  onClick={() =>
+                    navigate(
+                      `/library/${file.sectionSlug}/file/${encodeURIComponent(file.id)}`,
+                    )
+                  }
+                >
+                  <p className="text-sm font-medium text-brand-ink truncate">{file.name}</p>
+                  <p className="text-xs text-brand-gray-muted uppercase mt-1">{file.kind}</p>
+                </button>
+                <Button variant="ghost" size="icon" asChild>
+                  <a href={file.url} download={file.name} title="下载">
+                    <Download className="w-4 h-4" />
+                  </a>
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {paginated.length === 0 && (
         <div className="text-center py-12">
