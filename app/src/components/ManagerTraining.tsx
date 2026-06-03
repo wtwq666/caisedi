@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
-import { FileText, Presentation, Download, Eye, Tag, Search, X, BookOpen, Hash } from 'lucide-react'
-import { trainingDocs, trainingCategories } from '../data/trainingData'
-import type { TrainingDoc } from '../data/trainingData'
+import { FileText, Presentation, Eye, Tag, Search, X, BookOpen, Hash } from 'lucide-react'
+import { resolveDocumentFileUrl } from '../lib/getAssetUrl'
+import { trainingCategories } from '../data/trainingData'
+import { useDocuments } from '../hooks/useDocuments'
+import type { DocumentDto as TrainingDoc } from '../services/documentService'
 import DocViewer from './DocViewer'
 import MobileDetailBackBar from './MobileDetailBackBar'
 import { useMasterDetailMobile } from '../hooks/use-master-detail-mobile'
@@ -17,6 +19,7 @@ const fileColors: Record<string, { bg: string; text: string }> = {
 }
 
 export default function ManagerTraining() {
+  const { docs: trainingDocs } = useDocuments('manager')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchText, setSearchText] = useState('')
   const [selectedDoc, setSelectedDoc] = useState<TrainingDoc | null>(null)
@@ -31,9 +34,7 @@ export default function ManagerTraining() {
         doc.tags.some((t) => t.includes(searchText))
       return matchCategory && matchSearch
     })
-  }, [selectedCategory, searchText])
-
-  const downloadUrl = (doc: TrainingDoc) => `/training/${encodeURIComponent(doc.filename)}`
+  }, [trainingDocs, selectedCategory, searchText])
 
   const hasSelection = !!selectedDoc
   const { showList, showDetail, isMobile, closeDetail } = useMasterDetailMobile(
@@ -185,14 +186,6 @@ export default function ManagerTraining() {
                 <Eye size={16} />
                 在线预览
               </button>
-              <a
-                href={downloadUrl(selectedDoc)}
-                download
-                className="flex items-center gap-2 px-5 py-2.5 text-[#1890FF] border border-[#1890FF] text-sm rounded hover:bg-[#E6F7FF] transition-colors"
-              >
-                <Download size={16} />
-                下载文档
-              </a>
             </div>
 
             {/* Content Overview */}
@@ -215,7 +208,7 @@ export default function ManagerTraining() {
 
       {previewDoc && (
         <DocViewer
-          fileUrl={downloadUrl(previewDoc)}
+          fileUrl={resolveDocumentFileUrl(previewDoc)}
           fileType={previewDoc.fileType as 'pdf' | 'docx'}
           title={previewDoc.title}
           onClose={() => setPreviewDoc(null)}

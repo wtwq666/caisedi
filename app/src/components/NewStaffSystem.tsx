@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
-import { FileText, Presentation, BookOpen, Download, Eye, Search, X, Hash } from 'lucide-react'
-import { newStaffDocs, newStaffCategories } from '../data/newStaffData'
-import type { NewStaffDoc } from '../data/newStaffData'
+import { FileText, Presentation, BookOpen, Eye, Search, X, Hash } from 'lucide-react'
+import { resolveDocumentFileUrl } from '../lib/getAssetUrl'
+import { newStaffCategories } from '../data/newStaffData'
+import { useDocuments } from '../hooks/useDocuments'
+import type { DocumentDto as NewStaffDoc } from '../services/documentService'
 import DocViewer from './DocViewer'
 import MobileDetailBackBar from './MobileDetailBackBar'
 import { useMasterDetailMobile } from '../hooks/use-master-detail-mobile'
@@ -19,6 +21,7 @@ const fileColors: Record<string, { bg: string; text: string; border: string }> =
 }
 
 export default function NewStaffSystem() {
+  const { docs: newStaffDocs } = useDocuments('new-staff')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchText, setSearchText] = useState('')
   const [selectedDoc, setSelectedDoc] = useState<NewStaffDoc | null>(null)
@@ -33,9 +36,7 @@ export default function NewStaffSystem() {
         doc.tags.some((t) => t.includes(searchText))
       return matchCategory && matchSearch
     })
-  }, [selectedCategory, searchText])
-
-  const downloadUrl = (doc: NewStaffDoc) => `/training/${encodeURIComponent(doc.filename)}`
+  }, [newStaffDocs, selectedCategory, searchText])
 
   const hasSelection = !!selectedDoc
   const { showList, showDetail, isMobile, closeDetail } = useMasterDetailMobile(
@@ -190,30 +191,25 @@ export default function NewStaffSystem() {
 
             {/* Actions */}
             <div className="flex items-center gap-3 pt-4 border-t border-[#F0F0F0]">
-              <button
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#1890FF] text-white text-sm rounded hover:bg-[#096DD9] transition-colors"
-                onClick={() => {
-                  const url = downloadUrl(selectedDoc)
-                  if (selectedDoc.fileType === 'pptx') {
-                    window.open(url, '_blank')
-                  } else {
-                    const a = document.createElement('a')
-                    a.href = url
-                    a.download = selectedDoc.filename
-                    a.click()
-                  }
-                }}
-              >
-                <Download size={16} />
-                下载文档
-              </button>
-              <button
-                className="flex items-center gap-2 px-5 py-2.5 text-[#1890FF] border border-[#1890FF] text-sm rounded hover:bg-[#E6F7FF] transition-colors"
-                onClick={() => setViewerDoc(selectedDoc)}
-              >
-                <Eye size={16} />
-                在线预览
-              </button>
+              {selectedDoc.fileType === 'pptx' ? (
+                <a
+                  href={resolveDocumentFileUrl(selectedDoc)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#1890FF] text-white text-sm rounded hover:bg-[#096DD9] transition-colors"
+                >
+                  <Eye size={16} />
+                  浏览器打开
+                </a>
+              ) : (
+                <button
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#1890FF] text-white text-sm rounded hover:bg-[#096DD9] transition-colors"
+                  onClick={() => setViewerDoc(selectedDoc)}
+                >
+                  <Eye size={16} />
+                  在线预览
+                </button>
+              )}
             </div>
 
             {/* File info */}
@@ -255,7 +251,7 @@ export default function NewStaffSystem() {
 
       {viewerDoc && (
         <DocViewer
-          fileUrl={downloadUrl(viewerDoc)}
+          fileUrl={resolveDocumentFileUrl(viewerDoc)}
           fileType={viewerDoc.fileType}
           title={viewerDoc.title}
           onClose={() => setViewerDoc(null)}

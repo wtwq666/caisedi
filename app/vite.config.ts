@@ -8,11 +8,21 @@ export default defineConfig({
   base: '/',
   plugins: [inspectAttr(), react()],
   server: {
-    port: 3000,
+    port: 3100,
+    strictPort: true,
+    proxy: {
+      "^/assets/(training|stores|news)/": {
+        target: "http://localhost:8100",
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  optimizeDeps: {
+    include: ["pdfjs-dist"],
   },
 });

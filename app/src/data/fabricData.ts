@@ -786,14 +786,8 @@ export const fabricList: FabricData[] = [
   },
 ]
 
-export const fabricCategories = [
-  { key: 'all', label: '全部' },
-  { key: '天然纤维', label: '天然纤维' },
-  { key: '再生纤维', label: '再生纤维' },
-  { key: '合成纤维', label: '合成纤维' },
-  { key: '混纺面料', label: '混纺面料' },
-  { key: '混纺/特殊', label: '混纺/特殊' },
-]
+/** @deprecated 请使用 constants/fabricCategoryTaxonomy */
+export { FABRIC_QUIZ_TAG_OPTIONS as fabricCategories } from '../constants/fabricCategoryTaxonomy'
 
 export const fabricModules = [
   { key: 'coreFeatures', label: '产品认知' },

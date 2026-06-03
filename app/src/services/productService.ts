@@ -1,17 +1,17 @@
-import { productList } from '../data/productData'
+import { getProducts } from '../lib/catalogStore'
 import type { ProductData } from '../types/product'
 
 export const productService = {
   list(): ProductData[] {
-    return productList
+    return getProducts()
   },
 
   getById(id: number): ProductData | undefined {
-    return productList.find((p) => p.id === id)
+    return getProducts().find((p) => p.id === id)
   },
 
   getByCode(code: string): ProductData | undefined {
     const normalized = code.trim().toLowerCase()
-    return productList.find((p) => p.productCode.toLowerCase() === normalized)
+    return getProducts().find((p) => p.productCode.toLowerCase() === normalized)
   },
 }

@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-浏览器打开 http://localhost:3000
+浏览器打开 http://localhost:3100
 
 ## 演示账号
 
@@ -45,6 +45,12 @@ src/
   services/     # 数据访问层（接后端时只改此处）
   lib/          # 测验记录、搜索索引、本地存储等
 ```
+
+## 前后端分离（FastAPI）
+
+默认仍为纯前端（`VITE_USE_MOCK=true`）。接 API 时见仓库根目录 [api/README.md](../api/README.md) 与 `app/.env.example`。
+
+大文件放在仓库根目录 `storage/`，由 API `GET /assets/...` 提供，不打包进前端。
 
 ## 产品文档
 

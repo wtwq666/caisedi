@@ -14,30 +14,63 @@ export function truncate(text: string, max = 96): string {
   return t.length <= max ? t : `${t.slice(0, max)}…`
 }
 
+export type McqChoice = { valueId: string; label: string }
+
+const OPTION_KEYS = ['A', 'B', 'C', 'D'] as const
+
+/**
+ * 构建单选题：判分只认 key；干扰项按 valueId + label 去重，不足 3 个则跳过。
+ */
 export function buildMcq(
   id: string,
   fields: Pick<
     QuizQuestion,
-    'source' | 'tagKey' | 'tagLabel' | 'moduleKey' | 'moduleLabel' | 'topic' | 'prompt'
+    | 'source'
+    | 'tagKey'
+    | 'tagLabel'
+    | 'moduleKey'
+    | 'moduleLabel'
+    | 'topic'
+    | 'prompt'
+    | 'origin'
   > &
     Partial<Pick<QuizQuestion, 'imageUrl' | 'reveal' | 'multiSelect'>>,
-  correct: string,
-  pool: string[],
+  correct: McqChoice,
+  distractorPool: McqChoice[],
 ): QuizQuestion | null {
-  if (!correct?.trim()) return null
-  const keys = ['A', 'B', 'C', 'D']
-  const correctLabel = truncate(correct, 120)
-  const distractorLabels = shuffle(pool.filter((v) => v && v !== correct))
-    .slice(0, 3)
-    .map((d) => truncate(d, 120))
-  const labels = shuffle([correctLabel, ...distractorLabels]).slice(0, 4)
-  const correctIndex = labels.indexOf(correctLabel)
+  if (!correct.valueId?.trim() || !correct.label?.trim()) return null
+
+  const correctLabel = truncate(correct.label, 120)
+  const seenIds = new Set<string>([correct.valueId])
+  const seenLabels = new Set<string>([correctLabel])
+
+  const distractors: McqChoice[] = []
+  for (const d of shuffle(distractorPool)) {
+    if (!d.valueId?.trim() || !d.label?.trim()) continue
+    if (d.valueId === correct.valueId) continue
+    const label = truncate(d.label, 120)
+    if (seenIds.has(d.valueId) || seenLabels.has(label)) continue
+    seenIds.add(d.valueId)
+    seenLabels.add(label)
+    distractors.push({ valueId: d.valueId, label })
+    if (distractors.length >= 3) break
+  }
+
+  if (distractors.length < 3) return null
+
+  const items = shuffle([
+    { valueId: correct.valueId, label: correctLabel },
+    ...distractors.map((d) => ({ valueId: d.valueId, label: truncate(d.label, 120) })),
+  ])
+
+  const correctIndex = items.findIndex((i) => i.valueId === correct.valueId)
   if (correctIndex < 0) return null
-  const options: QuizOption[] = labels.map((label, i) => ({
-    key: keys[i],
-    label,
+
+  const options: QuizOption[] = items.map((item, i) => ({
+    key: OPTION_KEYS[i],
+    label: item.label,
   }))
-  const correctKey = keys[correctIndex]
+  const correctKey = OPTION_KEYS[correctIndex]
 
   return {
     id,
@@ -53,6 +86,7 @@ export function buildMcq(
     multiSelect: fields.multiSelect ?? false,
     imageUrl: fields.imageUrl,
     reveal: fields.reveal,
+    origin: fields.origin ?? 'generated',
   }
 }
 

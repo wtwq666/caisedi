@@ -1,3 +1,5 @@
+import { storeStaffEmployees } from './storeStaffSeed'
+
 export interface EmployeeData {
   id: number
   employeeNo: string
@@ -273,4 +275,5 @@ export const allEmployees: EmployeeData[] = [
     emergencyContact2Name: '', emergencyContact2Relation: '', emergencyContact2Phone: '',
     emergencyContact2Address: '', avatarUrl: 'https://oss.xtwq666.top/avatar/010.jpg', status: 'active',
   },
+  ...storeStaffEmployees,
 ]

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronLeft, Download, Maximize2, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { ChevronLeft, Maximize2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { useOverlayBack } from '../hooks/use-overlay-back'
 import { useIsMobile } from '../hooks/use-mobile'
 import {
@@ -14,14 +14,16 @@ import '../styles/doc-viewer.css'
 
 interface DocViewerProps {
   fileUrl: string
-  fileType: 'pdf' | 'docx' | 'pptx'
+  fileType: 'pdf' | 'docx' | 'pptx' | 'xls'
   title: string
   onClose: () => void
 }
 
 export default function DocViewer({ fileUrl, fileType, title, onClose }: DocViewerProps) {
   const isMobile = useIsMobile()
-  const { requestClose } = useOverlayBack(true, onClose, `doc-viewer-${title}`)
+  const overlayId = `doc-viewer-${fileType}-${title}`
+  const { requestClose } = useOverlayBack(isMobile, onClose, overlayId)
+  const closeViewer = isMobile ? requestClose : onClose
   const [scale, setScale] = useState(1.2)
   const docxStageRef = useRef<HTMLDivElement>(null)
   const docxContainerRef = useRef<HTMLDivElement>(null)
@@ -44,6 +46,7 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
 
   useEffect(() => {
     if (fileType !== 'docx') return
+    let alive = true
     const stage = docxStageRef.current
     const container = docxContainerRef.current
     if (!stage || !container) return
@@ -53,6 +56,7 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
 
     const renderDocx = async () => {
       try {
+        if (!alive) return
         setDocxLoading(true)
         setDocxError('')
 
@@ -60,30 +64,39 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
           prepareDocxReflowContainer(stage, container)
         }
 
-        const response = await fetch(fileUrl)
-        if (!response.ok) throw new Error('Failed to load document')
+        const response = await fetch(fileUrl, { credentials: 'same-origin' })
+        if (!alive) return
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
         const arrayBuffer = await response.arrayBuffer()
+        if (!alive) return
 
         const { renderAsync } = await import('docx-preview')
+        if (!alive) return
         await renderAsync(arrayBuffer, container, undefined, {
           className: 'docx-preview-container',
           inWrapper: !isMobile,
           ignoreWidth: isMobile,
           ignoreHeight: isMobile,
-          ignoreFonts: false,
+          ignoreFonts: true,
           breakPages: !isMobile,
           renderHeaders: !isMobile,
           renderFooters: !isMobile,
         })
 
+        if (!alive) return
         setDocxLoading(false)
       } catch {
-        setDocxError('文档加载失败，请尝试下载查看')
+        if (!alive) return
+        setDocxError('文档加载失败，请稍后重试或联系管理员')
         setDocxLoading(false)
       }
     }
 
     void renderDocx()
+    return () => {
+      alive = false
+      container.innerHTML = ''
+    }
   }, [fileUrl, fileType, isMobile])
 
   useEffect(() => {
@@ -92,9 +105,11 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
     const stage = docxStageRef.current
     if (!stage) return
 
+    let rafId = 0
     const run = () => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(applyDocxFit)
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        applyDocxFit()
       })
     }
 
@@ -102,7 +117,17 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
 
     const ro = new ResizeObserver(() => run())
     ro.observe(stage)
-    return () => ro.disconnect()
+
+    const onViewportResize = () => run()
+    window.visualViewport?.addEventListener('resize', onViewportResize)
+    window.visualViewport?.addEventListener('scroll', onViewportResize)
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      ro.disconnect()
+      window.visualViewport?.removeEventListener('resize', onViewportResize)
+      window.visualViewport?.removeEventListener('scroll', onViewportResize)
+    }
   }, [fileType, docxLoading, docxError, applyDocxFit])
 
   useEffect(() => {
@@ -112,7 +137,7 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
     }
   }, [])
 
-  const toolbarClose = requestClose
+  const toolbarClose = closeViewer
 
   const resetDocxZoom = () => {
     docxUserZoomRef.current = 1
@@ -190,14 +215,6 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
             </button>
           </>
         )}
-        <a
-          href={fileUrl}
-          download
-          className="flex items-center justify-center w-10 h-10 rounded-lg text-white border border-white/30 active:bg-white/15"
-          aria-label="下载"
-        >
-          <Download size={18} />
-        </a>
         {!isMobile && (
           <button
             type="button"
@@ -235,14 +252,7 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
           )}
           {docxError && (
             <div className="text-center py-24 px-6">
-              <p className="text-[#F5222D] text-sm mb-4">{docxError}</p>
-              <a
-                href={fileUrl}
-                download
-                className="inline-block px-5 py-2.5 bg-[#1890FF] text-white text-sm rounded-lg"
-              >
-                下载查看
-              </a>
+              <p className="text-[#F5222D] text-sm">{docxError}</p>
             </div>
           )}
           <div ref={docxStageRef} className="doc-viewer-docx-stage">
@@ -254,9 +264,9 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
   )
 
   if (fileType === 'pptx') {
-    return createPortal(
-      <div className="doc-viewer-portal doc-viewer-portal--desktop items-center justify-center p-4">
-        <div className="bg-white rounded-xl max-w-md w-full p-8 shadow-xl relative mx-4">
+    const pptxCard = (
+      <div className="bg-white rounded-xl max-w-md w-full p-8 shadow-xl relative mx-auto">
+        {!isMobile && (
           <button
             type="button"
             className="absolute top-3 right-3 w-10 h-10 rounded-full bg-[#F5F5F5]"
@@ -264,17 +274,34 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
           >
             ×
           </button>
-          <h3 className="text-lg font-medium text-center mb-2">{title}</h3>
-          <p className="text-sm text-[#8C8C8C] text-center mb-6">请在浏览器中打开 PPT</p>
-          <div className="flex flex-col gap-3">
-            <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="py-2.5 bg-[#1890FF] text-white text-center rounded-lg text-sm">
-              浏览器打开
-            </a>
-            <a href={fileUrl} download className="py-2.5 border border-[#1890FF] text-[#1890FF] text-center rounded-lg text-sm">
-              下载
-            </a>
-          </div>
-        </div>
+        )}
+        <h3 className="text-lg font-medium text-center mb-2">{title}</h3>
+        <p className="text-sm text-[#8C8C8C] text-center mb-6">请在浏览器中打开 PPT</p>
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block py-2.5 bg-[#1890FF] text-white text-center rounded-lg text-sm"
+        >
+          浏览器打开
+        </a>
+      </div>
+    )
+
+    if (isMobile) {
+      return createPortal(
+        <div className="doc-viewer-portal doc-viewer-portal--mobile">
+          <div className="doc-viewer-portal__safe-top" aria-hidden="true" />
+          {toolbar}
+          <div className="doc-viewer-content flex items-center justify-center p-4">{pptxCard}</div>
+        </div>,
+        document.body,
+      )
+    }
+
+    return createPortal(
+      <div className="doc-viewer-portal doc-viewer-portal--desktop items-center justify-center p-4">
+        {pptxCard}
       </div>,
       document.body,
     )
@@ -283,7 +310,9 @@ export default function DocViewer({ fileUrl, fileType, title, onClose }: DocView
   if (isMobile) {
     return createPortal(
       <div
-        className={`doc-viewer-portal${fileType === 'docx' ? ' doc-viewer-portal--docx-reflow' : ''}`}
+        className={`doc-viewer-portal doc-viewer-portal--mobile${
+          fileType === 'docx' ? ' doc-viewer-portal--docx-reflow' : ''
+        }${fileType === 'pdf' ? ' doc-viewer-portal--pdf-mobile' : ''}`}
       >
         <div className="doc-viewer-portal__safe-top" aria-hidden="true" />
         {toolbar}

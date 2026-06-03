@@ -4,7 +4,7 @@ import { Heart, Store, ChevronDown, ChevronUp, Images } from 'lucide-react'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import BrandHero from '../components/BrandHero'
 import PageBreadcrumb from '../components/PageBreadcrumb'
-import { storeShowcaseAlbums } from '../data/storeShowcaseData'
+import { useStoreAlbums } from '../hooks/useStoreAlbums'
 
 const brandParagraphs = [
   'CAISEDI（凯施迪）始于2012年创立的国内服装设计师品牌，根植岭南沃土，以"传承与创新"为使命，将千年广府文化注入现代时尚基因。凯施迪运用"中庸之道"的理念，将恰到好处的时尚哲学与岭南文化结合，实现文化与时尚的完美融合，塑造出具有深厚文化底蕴和现代审美的品牌形象，在产品开发中保留岭南传统元素，又结合现代设计理念，推出既具有文化深度又符合当代潮流的产品。',
@@ -14,6 +14,7 @@ const brandParagraphs = [
 
 export default function Culture() {
   useDocumentTitle('公司文化')
+  const { albums: storeShowcaseAlbums } = useStoreAlbums()
   const [expanded, setExpanded] = useState(false)
   const showCollapse = brandParagraphs.length > 1
 

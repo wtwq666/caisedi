@@ -3,12 +3,13 @@ import { knowledgeNavGroups, knowledgeTabs } from '../constants/knowledgeNav'
 type Props = {
   activeTab: string
   onTabChange: (key: string) => void
+  fillHeight?: boolean
 }
 
-export default function KnowledgeNav({ activeTab, onTabChange }: Props) {
+export default function KnowledgeNav({ activeTab, onTabChange, fillHeight = false }: Props) {
   return (
     <nav
-      className="w-full md:w-[200px] shrink-0"
+      className={`w-full md:w-[188px] shrink-0 ${fillHeight ? 'md:h-full md:min-h-0' : ''}`}
       aria-label="知识管理分类"
     >
       {/* 手机：横向滑动 Tab */}
@@ -38,7 +39,12 @@ export default function KnowledgeNav({ activeTab, onTabChange }: Props) {
       </div>
 
       {/* 桌面：分组侧栏 */}
-      <div className="hidden md:block bg-white rounded-lg border border-[#F0F0F0] overflow-hidden">
+      <div
+        className={`hidden md:block bg-white rounded-lg border border-[#F0F0F0] overflow-hidden ${
+          fillHeight ? 'h-full flex flex-col min-h-0' : ''
+        }`}
+      >
+        <div className={fillHeight ? 'flex-1 min-h-0 overflow-y-auto overscroll-contain' : ''}>
         {knowledgeNavGroups.map((group, gi) => (
           <div key={group.label} className={gi > 0 ? 'border-t border-[#F0F0F0]' : ''}>
             <div className="px-3 py-2 text-[10px] font-medium text-[#8C8C8C] uppercase tracking-wider bg-[#FAFAFA]">
@@ -67,6 +73,7 @@ export default function KnowledgeNav({ activeTab, onTabChange }: Props) {
             </ul>
           </div>
         ))}
+        </div>
       </div>
     </nav>
   )

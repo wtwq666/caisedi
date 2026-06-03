@@ -16,6 +16,9 @@ import BrandIntroSystem from '../components/BrandIntroSystem'
 import SalesScriptSystem from '../components/SalesScriptSystem'
 import NewStaffSystem from '../components/NewStaffSystem'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { isCatalogReady } from '../lib/catalogStore'
+import { getSessionQuestions } from '../lib/knowledgeQuizPool'
+import type { QuizPreparedPayload } from '../types/quizSession'
 
 export default function Knowledge() {
   useDocumentTitle('知识管理')
@@ -23,6 +26,7 @@ export default function Knowledge() {
   const [activeTab, setActiveTab] = useState<string>('fabric')
   const [quizOpen, setQuizOpen] = useState(false)
   const [quizSession, setQuizSession] = useState<QuizSession | null>(null)
+  const [quizPrepared, setQuizPrepared] = useState<QuizPreparedPayload | null>(null)
   const [quizRefresh, setQuizRefresh] = useState(0)
   const [quizHighlight, setQuizHighlight] = useState(false)
   const [sectionTagReset, setSectionTagReset] = useState(0)
@@ -97,7 +101,12 @@ export default function Knowledge() {
   useEffect(() => {
     setQuizOpen(false)
     setQuizSession(null)
+    setQuizPrepared(null)
   }, [activeTab])
+
+  useEffect(() => {
+    if (isCatalogReady()) setQuizRefresh((n) => n + 1)
+  }, [activeTab, showQuizEntry])
 
   const handleTabChange = (key: string) => {
     setActiveTab(key)
@@ -105,21 +114,45 @@ export default function Knowledge() {
     setInitialProductId(undefined)
   }
 
+  const isCatalogTab = activeTab === 'fabric' || activeTab === 'product'
+
   return (
-    <div className="max-w-[1400px] mx-auto">
-      <div className="mb-4">
+    <div
+      className={`mx-auto ${
+        isCatalogTab
+          ? 'w-full max-w-[1720px] md:flex md:flex-col md:h-[calc(100dvh-5.5rem)] md:max-h-[calc(100dvh-5.5rem)] md:overflow-hidden'
+          : 'max-w-[1400px]'
+      }`}
+    >
+      <div className={`mb-4 ${isCatalogTab ? 'md:mb-1.5 md:shrink-0' : ''}`}>
         <h1 className="app-page-local-title text-xl md:text-2xl font-semibold text-[#262626]">知识管理</h1>
-        <p className="app-page-local-subtitle text-sm text-muted-foreground mt-1">产品资料与培训话术一站式查阅</p>
+        <p
+          className={`app-page-local-subtitle text-sm text-muted-foreground mt-1 ${
+            isCatalogTab ? 'md:hidden' : ''
+          }`}
+        >
+          产品资料与培训话术一站式查阅
+        </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 items-start">
-        <KnowledgeNav activeTab={activeTab} onTabChange={handleTabChange} />
+      <div
+        className={`flex flex-col md:flex-row items-start md:items-stretch ${
+          isCatalogTab ? 'md:flex-1 md:min-h-0 gap-3' : 'gap-4'
+        }`}
+      >
+        <KnowledgeNav
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          fillHeight={isCatalogTab}
+        />
 
         <div
-          className={`flex-1 min-w-0 w-full flex flex-col ${
-            showQuizEntry
-              ? 'md:min-h-[calc(100dvh-10.5rem)] md:max-h-[calc(100dvh-10.5rem)]'
-              : ''
+          className={`flex-1 min-w-0 w-full flex flex-col min-h-0 overflow-hidden ${
+            isCatalogTab
+              ? 'md:flex-1 md:min-h-0'
+              : showQuizEntry
+                ? 'md:max-h-[calc(100dvh-10.5rem)]'
+                : 'md:max-h-[calc(100dvh-8rem)]'
           }`}
         >
           {showQuizEntry && (
@@ -133,38 +166,66 @@ export default function Knowledge() {
               initialModuleKey={quizModuleKey}
               autoStartQuiz={autoStartQuiz}
               onStartQuiz={(session) => {
-                setQuizSession(session)
-                setQuizOpen(true)
+                try {
+                  const payload = getSessionQuestions(
+                    quizSource,
+                    session.tagKey,
+                    session.moduleKey,
+                  )
+                  setQuizPrepared(payload)
+                  setQuizSession(session)
+                  setQuizOpen(true)
+                } catch {
+                  setQuizPrepared(null)
+                  setQuizSession(null)
+                  setQuizOpen(false)
+                }
               }}
             />
           )}
 
-          <KnowledgeQuizDialog
-            open={quizOpen}
-            onOpenChange={(open) => {
-              setQuizOpen(open)
-              if (!open) setQuizSession(null)
-            }}
-            variant={quizSource}
-            session={quizSession}
-            onAttemptSaved={() => setQuizRefresh((n) => n + 1)}
-            onContinueModules={() => setQuizSession(null)}
-            onChangeTag={() => {
-              setQuizSession(null)
-              setSectionTagReset((n) => n + 1)
-            }}
-          />
+          {quizSession && (
+            <KnowledgeQuizDialog
+              open={quizOpen}
+              onOpenChange={(open) => {
+                setQuizOpen(open)
+                if (!open) {
+                  setQuizSession(null)
+                  setQuizPrepared(null)
+                }
+              }}
+              variant={quizSource}
+              session={quizSession}
+              prepared={quizPrepared}
+              onAttemptSaved={() => setQuizRefresh((n) => n + 1)}
+              onContinueModules={() => {
+                setQuizSession(null)
+                setQuizPrepared(null)
+              }}
+              onChangeTag={() => {
+                setQuizSession(null)
+                setQuizPrepared(null)
+                setSectionTagReset((n) => n + 1)
+              }}
+            />
+          )}
 
-          <div className={showQuizEntry ? 'flex-1 min-h-0 flex flex-col mt-2' : 'mt-0'}>
+          <div
+            className={
+              isCatalogTab
+                ? 'flex-1 min-h-0 flex flex-col overflow-hidden mt-2 md:mt-0'
+                : 'mt-0'
+            }
+          >
             {activeTab === 'fabric' && (
               <FabricKnowledge
-                className={showQuizEntry ? 'flex-1 min-h-0' : ''}
+                className="flex-1 min-h-0 h-full"
                 initialFabricId={initialFabricId}
               />
             )}
             {activeTab === 'product' && (
               <ProductKnowledge
-                className={showQuizEntry ? 'flex-1 min-h-0' : ''}
+                className="flex-1 min-h-0 h-full"
                 initialProductId={initialProductId}
               />
             )}

@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
+import { checkApiHealth } from '../api/client'
+import { USE_MOCK } from '../api/config'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
@@ -10,16 +12,22 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [apiOffline, setApiOffline] = useState(false)
+
+  useEffect(() => {
+    if (USE_MOCK) return
+    void checkApiHealth().then((ok) => setApiOffline(!ok))
+  }, [])
 
   if (!isLoading && user) {
     return <Navigate to="/" replace />
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSubmitting(true)
-    const result = login(username, password)
+    const result = await login(username, password)
     setSubmitting(false)
     if (result.ok) {
       navigate('/', { replace: true })
@@ -39,16 +47,22 @@ export default function Login() {
           <p className="text-sm text-[#69c0ff] mt-2.5 font-medium tracking-wide">学习平台 · 企业信息系统</p>
         </div>
 
+        {apiOffline && (
+          <p className="mb-4 text-sm text-[#AD6800] bg-[#FFFBE6] border border-[#FFE58F] rounded-lg px-3 py-2">
+            无法连接学习平台服务（端口 8100）。请先启动 API，或检查网络后重试。
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-[#262626] mb-1.5">
-              工号
+              手机号 / 工号
             </label>
             <input
               id="username"
               type="text"
               autoComplete="username"
-              placeholder="例如 KS20250001"
+              placeholder="门店员工填手机号，如 13046313228"
               className="w-full h-10 px-3 rounded-lg border border-[#D9D9D9] text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -90,7 +104,7 @@ export default function Login() {
         <p className="mt-6 text-xs text-[#8C8C8C] text-center leading-relaxed">
           账号由后台统一开通，不支持自助注册。
           <br />
-          演示账号工号 KS20250001～KS20250010，初始密码 123456
+          门店员工：手机号 + 初始密码 123456；演示账号工号 KS20250001～10，密码 123456
         </p>
       </div>
     </div>

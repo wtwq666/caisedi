@@ -7,15 +7,17 @@ import {
   Tag,
   BookOpen,
   Hash,
-  Download,
   Eye,
   Table2,
   Images,
 } from 'lucide-react'
-import { storeImageDocs, storeImageCategories } from '../data/storeImageData'
+import { storeImageCategories } from '../data/storeImageData'
 import type { StoreImageDoc } from '../data/storeImageData'
-import { storeShowcaseAlbums } from '../data/storeShowcaseData'
 import type { StoreShowcaseAlbum } from '../data/storeShowcaseData'
+import { useDocuments } from '../hooks/useDocuments'
+import { useStoreAlbums } from '../hooks/useStoreAlbums'
+import type { DocumentDto } from '../services/documentService'
+import { resolveDocumentFileUrl } from '../lib/getAssetUrl'
 import DocViewer from './DocViewer'
 import StoreShowcaseGallery from './StoreShowcaseGallery'
 import MobileDetailBackBar from './MobileDetailBackBar'
@@ -33,8 +35,10 @@ const fileColors: Record<string, { bg: string; text: string }> = {
   xls: { bg: 'bg-[#F6FFED]', text: 'text-[#52C41A]' },
 }
 
+type StoreImageDocItem = StoreImageDoc | DocumentDto
+
 type ListItem =
-  | { kind: 'doc'; doc: StoreImageDoc }
+  | { kind: 'doc'; doc: StoreImageDocItem }
   | { kind: 'album'; album: StoreShowcaseAlbum }
 
 type StoreImageSystemProps = {
@@ -46,6 +50,9 @@ export default function StoreImageSystem({
   initialAlbumId,
   initialDocId,
 }: StoreImageSystemProps) {
+  const { docs: storeImageDocs } = useDocuments('store-image')
+  const { albums: storeShowcaseAlbums } = useStoreAlbums()
+
   const initialAlbum = initialAlbumId
     ? storeShowcaseAlbums.find((a) => a.id === initialAlbumId) ?? null
     : null
@@ -58,9 +65,9 @@ export default function StoreImageSystem({
     initialAlbum ? '开业活动' : initialDoc ? initialDoc.category : 'all',
   )
   const [searchText, setSearchText] = useState('')
-  const [selectedDoc, setSelectedDoc] = useState<StoreImageDoc | null>(initialDoc)
+  const [selectedDoc, setSelectedDoc] = useState<StoreImageDocItem | null>(initialDoc)
   const [selectedAlbum, setSelectedAlbum] = useState<StoreShowcaseAlbum | null>(initialAlbum)
-  const [previewDoc, setPreviewDoc] = useState<StoreImageDoc | null>(null)
+  const [previewDoc, setPreviewDoc] = useState<StoreImageDocItem | null>(null)
 
   const filteredDocs = useMemo(() => {
     return storeImageDocs.filter((doc) => {
@@ -72,7 +79,7 @@ export default function StoreImageSystem({
         doc.tags.some((t) => t.includes(searchText))
       return matchCategory && matchSearch
     })
-  }, [selectedCategory, searchText])
+  }, [selectedCategory, searchText, storeImageDocs])
 
   const filteredAlbums = useMemo(() => {
     return storeShowcaseAlbums.filter((album) => {
@@ -85,7 +92,7 @@ export default function StoreImageSystem({
         album.tags.some((t) => t.includes(searchText))
       return matchCategory && matchSearch
     })
-  }, [selectedCategory, searchText])
+  }, [selectedCategory, searchText, storeShowcaseAlbums])
 
   const listItems = useMemo((): ListItem[] => {
     const docs: ListItem[] = filteredDocs.map((doc) => ({ kind: 'doc', doc }))
@@ -93,7 +100,7 @@ export default function StoreImageSystem({
     return [...albums, ...docs]
   }, [filteredDocs, filteredAlbums])
 
-  const selectDoc = (doc: StoreImageDoc) => {
+  const selectDoc = (doc: StoreImageDocItem) => {
     setSelectedDoc(doc)
     setSelectedAlbum(null)
   }
@@ -102,8 +109,6 @@ export default function StoreImageSystem({
     setSelectedAlbum(album)
     setSelectedDoc(null)
   }
-
-  const downloadUrl = (doc: StoreImageDoc) => `/training/${encodeURIComponent(doc.filename)}`
 
   const hasSelection = !!selectedAlbum || !!selectedDoc
   const clearSelection = () => {
@@ -297,34 +302,22 @@ export default function StoreImageSystem({
             {/* Actions */}
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 mb-8">
               {selectedDoc.fileType === 'xls' ? (
-                <>
-                  <span className="text-sm text-[#8C8C8C]">Excel 文件请在浏览器中打开或下载查看</span>
-                  <a href={downloadUrl(selectedDoc)} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#1890FF] text-white text-sm rounded hover:bg-[#096DD9] transition-colors">
-                    浏览器打开
-                  </a>
-                  <a href={downloadUrl(selectedDoc)} download
-                    className="flex items-center gap-2 px-5 py-2.5 text-[#1890FF] border border-[#1890FF] text-sm rounded hover:bg-[#E6F7FF] transition-colors">
-                    <Download size={16} />
-                    下载文档
-                  </a>
-                </>
+                <a
+                  href={resolveDocumentFileUrl(selectedDoc)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#1890FF] text-white text-sm rounded hover:bg-[#096DD9] transition-colors"
+                >
+                  浏览器打开
+                </a>
               ) : (
-                <>
-                  <button
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#1890FF] text-white text-sm rounded hover:bg-[#096DD9] transition-colors"
-                    onClick={() => setPreviewDoc(selectedDoc)}
-                  >
-                    <Eye size={16} />
-                    在线预览
-                  </button>
-                  <a href={downloadUrl(selectedDoc)} download
-                    className="flex items-center gap-2 px-5 py-2.5 text-[#1890FF] border border-[#1890FF] text-sm rounded hover:bg-[#E6F7FF] transition-colors"
-                  >
-                    <Download size={16} />
-                    下载文档
-                  </a>
-                </>
+                <button
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#1890FF] text-white text-sm rounded hover:bg-[#096DD9] transition-colors"
+                  onClick={() => setPreviewDoc(selectedDoc)}
+                >
+                  <Eye size={16} />
+                  在线预览
+                </button>
               )}
             </div>
 
@@ -349,7 +342,7 @@ export default function StoreImageSystem({
       {/* DocViewer Modal */}
       {previewDoc && (
         <DocViewer
-          fileUrl={downloadUrl(previewDoc)}
+          fileUrl={resolveDocumentFileUrl(previewDoc)}
           fileType={previewDoc.fileType as 'pdf' | 'docx'}
           title={previewDoc.title}
           onClose={() => setPreviewDoc(null)}

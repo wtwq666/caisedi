@@ -16,7 +16,7 @@ export const navItems = [
   { path: '/products', label: '商品速查', icon: Search },
   { path: '/quiz-records', label: '我的答题', icon: ClipboardCheck },
   { path: '/news', label: '新闻通知', icon: Newspaper },
-  { path: '/changelog', label: '更新公告', icon: History },
+  { path: '/changelog', label: '资料更新', icon: History },
 ]
 
 type SidebarNavProps = {

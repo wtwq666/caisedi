@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   BookOpen,
-  Brain,
   ChevronDown,
   ChevronRight,
   ChevronUp,
@@ -21,7 +20,9 @@ import {
 import { FABRIC_QUIZ_TAGS, PRODUCT_QUIZ_TAGS } from '../constants/quizTags'
 import { FABRIC_QUIZ_MODULES, PRODUCT_QUIZ_MODULES } from '../constants/quizModules'
 import { useAuth } from '../context/AuthContext'
-import { getModuleStatsForTag, getTagQuestionCount } from '../lib/knowledgeQuizPool'
+import { isCatalogReady } from '../lib/catalogStore'
+import { getModuleStatsForTag, getTagQuestionCount, isQuizPoolReady } from '../lib/knowledgeQuizPool'
+import { QUIZ_SESSION_SIZE } from '../constants/quizConfig'
 import {
   getBestScore,
   getModuleStatus,
@@ -84,13 +85,13 @@ const CONFIG: Record<
 > = {
   fabric: {
     title: '面料知识测验',
-    subtitle: '按面料分类与知识模块巩固所学，成绩自动记入「我的答题」',
+    subtitle: '按面料分类与知识模块组卷测验（每轮约 10 题），成绩自动记入「我的答题」',
     tagStep: '面料分类',
     moduleStep: '知识模块',
   },
   product: {
     title: '商品看图测验',
-    subtitle: '按商品系列与知识板块完成看图题，成绩自动记入「我的答题」',
+    subtitle: '按系列看图辨色等测验（每轮约 10 题），成绩自动记入「我的答题」',
     tagStep: '商品系列',
     moduleStep: '知识板块',
   },
@@ -129,6 +130,8 @@ export default function KnowledgeQuizSection({
   const [expanded, setExpanded] = useState(!defaultCollapsed)
   const [activeTagKey, setActiveTagKey] = useState<string | null>(null)
   const [activeTagLabel, setActiveTagLabel] = useState('')
+  const catalogReady = isCatalogReady()
+  const poolReady = isQuizPoolReady()
 
   useEffect(() => {
     if (highlight) setExpanded(true)
@@ -184,7 +187,7 @@ export default function KnowledgeQuizSection({
   return (
     <section
       id="knowledge-quiz-section"
-      className={`shrink-0 mb-3 rounded-lg border bg-white overflow-hidden transition-shadow ${
+      className={`shrink-0 mb-2 rounded-lg border bg-white overflow-hidden transition-shadow ${
         highlight
           ? 'border-primary shadow-md ring-2 ring-primary/20'
           : 'border-[#F0F0F0]'
@@ -198,7 +201,7 @@ export default function KnowledgeQuizSection({
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Brain size={16} />
+            <ClipboardCheck size={16} />
           </span>
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-[#262626]">{config.title}</h2>
@@ -226,6 +229,16 @@ export default function KnowledgeQuizSection({
 
       {expanded && (
       <div className="p-4 pt-3 space-y-5 border-t border-[#F0F0F0]">
+        {!catalogReady && (
+          <p className="text-xs text-[#AD6800] bg-[#FFFBE6] border border-[#FFE58F] rounded-lg px-3 py-2 -mt-1">
+            正在加载商品与面料资料，加载完成后即可开始测验。
+          </p>
+        )}
+        {catalogReady && !poolReady && (
+          <p className="text-xs text-[#AD6800] bg-[#FFFBE6] border border-[#FFE58F] rounded-lg px-3 py-2 -mt-1">
+            题库暂未生成（商品数量不足或资料未就绪），请稍后刷新页面。
+          </p>
+        )}
         <p className="text-xs text-[#8C8C8C] -mt-1 sm:hidden">
           <Link to="/quiz-records" className="text-primary hover:underline">
             我的答题
@@ -306,7 +319,7 @@ export default function KnowledgeQuizSection({
                     type="button"
                     disabled={disabled}
                     onClick={() => startModule(mod.key, mod.label)}
-                    className={`group text-left rounded-xl border px-3.5 py-3 transition-all ${
+                    className={`group text-left rounded-xl border px-3.5 py-3 ${
                       disabled
                         ? 'border-[#F0F0F0] bg-[#FAFAFA] opacity-60 cursor-not-allowed'
                         : status === 'in_progress'
@@ -322,7 +335,7 @@ export default function KnowledgeQuizSection({
                           disabled
                             ? 'bg-[#F5F5F5] text-[#BFBFBF]'
                             : 'bg-[#E6F7FF] text-primary group-hover:bg-primary group-hover:text-white'
-                        } transition-colors`}
+                        }`}
                       >
                         <Icon size={16} />
                       </span>
@@ -334,7 +347,9 @@ export default function KnowledgeQuizSection({
                           )}
                         </div>
                         <p className="text-xs text-[#8C8C8C] mt-1">
-                          {disabled ? '本分类暂无题目' : `共 ${count} 题`}
+                          {disabled
+                            ? '本分类暂无题目'
+                            : `题库 ${count} 题 · 每轮 ${stat?.sessionSize ?? Math.min(count, QUIZ_SESSION_SIZE)} 题`}
                           {best != null && (
                             <span className="text-primary ml-2">最高 {best}%</span>
                           )}

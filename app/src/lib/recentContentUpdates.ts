@@ -1,3 +1,4 @@
+import { resolveFabricSubCategory } from '../constants/fabricCategoryTaxonomy'
 import { brandIntroDocs } from '../data/brandIntroData'
 import { fabricList } from '../data/fabricData'
 import { managementDocs } from '../data/managementData'
@@ -10,10 +11,12 @@ import { storeShowcaseAlbums } from '../data/storeShowcaseData'
 import { trainingDocs } from '../data/trainingData'
 
 export type ContentUpdateType = '通知' | '文档' | '商品' | '面料' | '门店'
+export type ContentUpdateAction = '新增' | '修改'
 
 export type ContentUpdateItem = {
   id: string
   type: ContentUpdateType
+  action: ContentUpdateAction
   title: string
   subtitle?: string
   /** 展示用 YYYY/MM/DD */
@@ -31,8 +34,17 @@ const TYPE_BADGE: Record<ContentUpdateType, string> = {
   门店: 'bg-[#F9F0FF] text-[#722ED1]',
 }
 
+const ACTION_BADGE: Record<ContentUpdateAction, string> = {
+  新增: 'bg-[#F6FFED] text-[#389E0D]',
+  修改: 'bg-[#FFF7E6] text-[#D48806]',
+}
+
 export function getContentUpdateTypeBadge(type: ContentUpdateType): string {
   return TYPE_BADGE[type]
+}
+
+export function getContentUpdateActionBadge(action: ContentUpdateAction): string {
+  return ACTION_BADGE[action]
 }
 
 function toSortKey(isoDate: string): number {
@@ -54,19 +66,22 @@ function parsePublishTime(publishTime: string): { sortKey: number; dateLabel: st
   return { sortKey, dateLabel }
 }
 
-/** 培训/制度等文档的上架日期（资料更新，非系统版本） */
-const DOC_UPDATED_AT: Record<string, { tab: string; updatedAt: string }> = {
-  's3': { tab: 'store-image', updatedAt: '2026-05-27' },
-  's1': { tab: 'store-image', updatedAt: '2026-04-10' },
-  's2': { tab: 'store-image', updatedAt: '2026-04-10' },
-  'm1': { tab: 'management', updatedAt: '2026-01-15' },
-  'm2': { tab: 'management', updatedAt: '2026-04-18' },
-  'm3': { tab: 'management', updatedAt: '2026-04-18' },
-  'b1': { tab: 'brand', updatedAt: '2026-02-01' },
-  '1': { tab: 'manager', updatedAt: '2026-03-01' },
-  '5': { tab: 'manager', updatedAt: '2026-04-05' },
-  'ss1': { tab: 'sales', updatedAt: '2026-03-20' },
-  'ns1': { tab: 'new-staff', updatedAt: '2026-02-15' },
+/** 培训/制度等文档的上架或修订日期（资料更新，非系统版本） */
+const DOC_UPDATED_AT: Record<
+  string,
+  { tab: string; updatedAt: string; action: ContentUpdateAction }
+> = {
+  s3: { tab: 'store-image', updatedAt: '2026-05-27', action: '新增' },
+  s1: { tab: 'store-image', updatedAt: '2026-04-10', action: '新增' },
+  s2: { tab: 'store-image', updatedAt: '2026-04-10', action: '新增' },
+  m1: { tab: 'management', updatedAt: '2026-01-15', action: '新增' },
+  m2: { tab: 'management', updatedAt: '2026-04-18', action: '修改' },
+  m3: { tab: 'management', updatedAt: '2026-04-18', action: '修改' },
+  b1: { tab: 'brand', updatedAt: '2026-02-01', action: '新增' },
+  '1': { tab: 'manager', updatedAt: '2026-03-01', action: '新增' },
+  '5': { tab: 'manager', updatedAt: '2026-04-05', action: '修改' },
+  ss1: { tab: 'sales', updatedAt: '2026-03-20', action: '新增' },
+  ns1: { tab: 'new-staff', updatedAt: '2026-02-15', action: '新增' },
 }
 
 const ALL_DOCS = [
@@ -82,11 +97,13 @@ function buildDocumentUpdates(): ContentUpdateItem[] {
   return ALL_DOCS.flatMap((doc) => {
     const meta = DOC_UPDATED_AT[doc.id]
     if (!meta) return []
+    const verb = meta.action === '修改' ? '更新' : '新增'
     return [
       {
         id: `doc-${doc.id}`,
         type: '文档' as const,
-        title: `新增培训文档：${doc.title}`,
+        action: meta.action,
+        title: `${verb}培训文档：${doc.title}`,
         subtitle: doc.category,
         dateLabel: formatDateLabel(meta.updatedAt),
         sortKey: toSortKey(meta.updatedAt),
@@ -103,6 +120,7 @@ function buildProductBatchUpdate(): ContentUpdateItem {
   return {
     id: 'products-2026-batch',
     type: '商品',
+    action: '新增',
     title: '2026 春夏商品资料上新',
     subtitle: `共 ${productList.length} 款，含${seasonText}等`,
     dateLabel: '2026/03/15',
@@ -112,10 +130,11 @@ function buildProductBatchUpdate(): ContentUpdateItem {
 }
 
 function buildFabricBatchUpdate(): ContentUpdateItem {
-  const categories = new Set(fabricList.map((f) => f.category))
+  const categories = new Set(fabricList.map((f) => resolveFabricSubCategory(f)))
   return {
     id: 'fabric-library',
     type: '面料',
+    action: '修改',
     title: '面料知识库更新',
     subtitle: `${fabricList.length} 种面料 · ${categories.size} 个分类`,
     dateLabel: '2026/02/20',
@@ -133,6 +152,7 @@ export function buildRecentContentUpdates(): ContentUpdateItem[] {
     items.push({
       id: `news-${note.id}`,
       type: '通知',
+      action: '新增',
       title: note.title,
       subtitle: note.author,
       dateLabel,
@@ -145,6 +165,7 @@ export function buildRecentContentUpdates(): ContentUpdateItem[] {
     items.push({
       id: `album-${album.id}`,
       type: '门店',
+      action: '新增',
       title: `门店风采：${album.title}`,
       subtitle: album.location,
       dateLabel: formatDateLabel(album.date),

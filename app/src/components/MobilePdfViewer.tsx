@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import * as pdfjs from 'pdfjs-dist'
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString()
+pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker
 
 interface MobilePdfViewerProps {
   fileUrl: string
@@ -22,13 +20,16 @@ export default function MobilePdfViewer({ fileUrl }: MobilePdfViewerProps) {
     if (!root) return
 
     let cancelled = false
-    root.innerHTML = ''
-    setLoading(true)
-    setError('')
-    setPageCurrent(1)
-    setPageTotal(0)
+    let lastWidth = 0
 
     const render = async () => {
+      if (cancelled) return
+      root.innerHTML = ''
+      setLoading(true)
+      setError('')
+      setPageCurrent(1)
+      setPageTotal(0)
+
       try {
         const loadingTask = pdfjs.getDocument(fileUrl)
         const pdf = await loadingTask.promise
@@ -37,11 +38,14 @@ export default function MobilePdfViewer({ fileUrl }: MobilePdfViewerProps) {
         setPageTotal(pdf.numPages)
 
         const measureWidth = () => {
+          const vv = window.visualViewport?.width
           const w =
             root.clientWidth ||
             root.parentElement?.clientWidth ||
+            vv ||
             document.documentElement.clientWidth
-          return Math.max(240, w - 24)
+          const sidePad = Math.max(12, Math.min(20, Math.round(w * 0.04)))
+          return Math.max(240, w - sidePad * 2)
         }
 
         let viewportWidth = measureWidth()
@@ -85,7 +89,10 @@ export default function MobilePdfViewer({ fileUrl }: MobilePdfViewerProps) {
           root.appendChild(wrap)
         }
 
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          lastWidth = measureWidth()
+          setLoading(false)
+        }
       } catch {
         if (!cancelled) {
           setError('PDF 加载失败，请下载后查看')
@@ -95,8 +102,28 @@ export default function MobilePdfViewer({ fileUrl }: MobilePdfViewerProps) {
     }
 
     void render()
+
+    let resizeTimer = 0
+    const onLayoutChange = () => {
+      const w = root.clientWidth || window.visualViewport?.width || 0
+      if (w <= 0 || Math.abs(w - lastWidth) < 24) return
+      window.clearTimeout(resizeTimer)
+      resizeTimer = window.setTimeout(() => {
+        if (!cancelled) void render()
+      }, 280)
+    }
+
+    const ro = new ResizeObserver(onLayoutChange)
+    ro.observe(root)
+    window.visualViewport?.addEventListener('resize', onLayoutChange)
+    window.addEventListener('orientationchange', onLayoutChange)
+
     return () => {
       cancelled = true
+      window.clearTimeout(resizeTimer)
+      ro.disconnect()
+      window.visualViewport?.removeEventListener('resize', onLayoutChange)
+      window.removeEventListener('orientationchange', onLayoutChange)
     }
   }, [fileUrl])
 
@@ -128,10 +155,7 @@ export default function MobilePdfViewer({ fileUrl }: MobilePdfViewerProps) {
   if (error) {
     return (
       <div className="text-center py-24 px-6">
-        <p className="text-[#F5222D] text-sm mb-4">{error}</p>
-        <a href={fileUrl} download className="inline-block px-5 py-2.5 bg-[#1890FF] text-white text-sm rounded-lg">
-          下载查看
-        </a>
+        <p className="text-[#F5222D] text-sm">{error}</p>
       </div>
     )
   }

@@ -1,8 +1,33 @@
+import { getFabricCategoryTag } from '../constants/fabricCategoryTaxonomy'
+import { FABRIC_GENERATED_CAP_PER_MODULE } from '../constants/quizConfig'
 import { FABRIC_MODULE_LABEL, type FabricQuizModuleKey } from '../constants/quizModules'
 import type { FabricData } from '../types/fabric'
 import type { QuizQuestion } from '../types/quiz'
 import { buildMcq, truncate } from './quizHelpers'
 import { parseFabricQuizText } from './parseFabricQuizzes'
+
+function capGenerated(questions: QuizQuestion[]): QuizQuestion[] {
+  return questions.slice(0, FABRIC_GENERATED_CAP_PER_MODULE)
+}
+
+/** 规则自动生成题（带 origin） */
+function mcqGen(
+  id: string,
+  fields: ReturnType<typeof fabricFields>,
+  correctRaw: string,
+  poolRaw: string[],
+): QuizQuestion | null {
+  if (!correctRaw?.trim()) return null
+  const label = truncate(correctRaw, 120)
+  return buildMcq(
+    id,
+    { ...fields, origin: 'generated' },
+    { valueId: correctRaw, label },
+    poolRaw
+      .filter((v) => v?.trim() && v !== correctRaw)
+      .map((v) => ({ valueId: v, label: truncate(v, 120) })),
+  )
+}
 
 function parseFeatureTitles(coreFeatures: string): string[] {
   return coreFeatures
@@ -56,10 +81,11 @@ function fabricFields(
   moduleLabel: string,
   prompt: string,
 ) {
+  const { tagKey, tagLabel } = getFabricCategoryTag(fabric)
   return {
     source: 'fabric' as const,
-    tagKey: fabric.category,
-    tagLabel: fabric.category,
+    tagKey,
+    tagLabel,
     moduleKey,
     moduleLabel,
     topic: fabric.fabricName,
@@ -72,7 +98,7 @@ function buildCoreFeatureQuestions(fabric: FabricData, allFabrics: FabricData[])
   const questions: QuizQuestion[] = []
   const summaryPool = allFabrics.map((f) => truncate(f.summary, 80))
 
-  const q1 = buildMcq(
+  const q1 = mcqGen(
     `fabric-cf-summary-${fabric.id}`,
     fabricFields(fabric, 'coreFeatures', label, `【${label}】面料「${fabric.fabricName}」的核心卖点是？`),
     truncate(fabric.summary, 80),
@@ -83,7 +109,7 @@ function buildCoreFeatureQuestions(fabric: FabricData, allFabrics: FabricData[])
   const titles = parseFeatureTitles(fabric.coreFeatures)
   const titlePool = allFabrics.flatMap((f) => parseFeatureTitles(f.coreFeatures))
   for (const title of titles.slice(0, 2)) {
-    const q = buildMcq(
+    const q = mcqGen(
       `fabric-cf-feat-${fabric.id}-${title.slice(0, 8)}`,
       fabricFields(fabric, 'coreFeatures', label, `【${label}】以下哪项是「${fabric.fabricName}」的核心特性？`),
       title,
@@ -92,15 +118,19 @@ function buildCoreFeatureQuestions(fabric: FabricData, allFabrics: FabricData[])
     if (q) questions.push(q)
   }
 
-  const qCat = buildMcq(
+  const catTag = getFabricCategoryTag(fabric)
+  const catLabelPool = [
+    ...new Set(allFabrics.map((f) => getFabricCategoryTag(f).tagLabel)),
+  ]
+  const qCat = mcqGen(
     `fabric-cf-cat-${fabric.id}`,
     fabricFields(fabric, 'coreFeatures', label, `【${label}】面料「${fabric.fabricName}」所属分类是？`),
-    fabric.category,
-    allFabrics.map((f) => f.category),
+    catTag.tagLabel,
+    catLabelPool,
   )
   if (qCat) questions.push(qCat)
 
-  return questions
+  return capGenerated(questions)
 }
 
 function buildSalesScriptQuestions(fabric: FabricData, allFabrics: FabricData[]): QuizQuestion[] {
@@ -114,7 +144,7 @@ function buildSalesScriptQuestions(fabric: FabricData, allFabrics: FabricData[])
   )
 
   for (const script of fabric.salesScripts.slice(0, 2)) {
-    const qCorrect = buildMcq(
+    const qCorrect = mcqGen(
       `fabric-ss-ok-${fabric.id}-${script.scene.slice(0, 6)}`,
       fabricFields(
         fabric,
@@ -127,7 +157,7 @@ function buildSalesScriptQuestions(fabric: FabricData, allFabrics: FabricData[])
     )
     if (qCorrect) questions.push(qCorrect)
 
-    const qWrong = buildMcq(
+    const qWrong = mcqGen(
       `fabric-ss-bad-${fabric.id}-${script.scene.slice(0, 6)}`,
       fabricFields(
         fabric,
@@ -141,7 +171,7 @@ function buildSalesScriptQuestions(fabric: FabricData, allFabrics: FabricData[])
     if (qWrong) questions.push(qWrong)
   }
 
-  return questions
+  return capGenerated(questions)
 }
 
 function buildComparisonQuestions(fabric: FabricData): QuizQuestion[] {
@@ -156,7 +186,7 @@ function buildComparisonQuestions(fabric: FabricData): QuizQuestion[] {
     const correct = fabricBetter
       ? `${fabric.fabricName} 更具优势`
       : `${opponent} 更具优势`
-    const q = buildMcq(
+    const q = mcqGen(
       `fabric-cc-${fabric.id}-${dimension}`,
       fabricFields(
         fabric,
@@ -175,7 +205,7 @@ function buildComparisonQuestions(fabric: FabricData): QuizQuestion[] {
     if (q) questions.push(q)
   }
 
-  return questions
+  return capGenerated(questions)
 }
 
 function buildQaQuestions(fabric: FabricData, allFabrics: FabricData[]): QuizQuestion[] {
@@ -186,7 +216,7 @@ function buildQaQuestions(fabric: FabricData, allFabrics: FabricData[]): QuizQue
   const questions: QuizQuestion[] = []
 
   for (const qa of fabric.qaObjections.slice(0, 3)) {
-    const q = buildMcq(
+    const q = mcqGen(
       `fabric-qa-${fabric.id}-${qa.question.slice(0, 8)}`,
       fabricFields(
         fabric,
@@ -200,7 +230,7 @@ function buildQaQuestions(fabric: FabricData, allFabrics: FabricData[]): QuizQue
     if (q) questions.push(q)
   }
 
-  return questions
+  return capGenerated(questions)
 }
 
 function buildPracticalQuestions(fabric: FabricData, allFabrics: FabricData[]): QuizQuestion[] {
@@ -212,7 +242,7 @@ function buildPracticalQuestions(fabric: FabricData, allFabrics: FabricData[]): 
 
   for (const pt of fabric.practicalTraining) {
     if (!pt.observation) continue
-    const q = buildMcq(
+    const q = mcqGen(
       `fabric-pt-${fabric.id}-${pt.title.slice(0, 8)}`,
       fabricFields(fabric, 'practicalTraining', label, `【${label}】「${pt.title}」的观察要点是？`),
       truncate(pt.observation, 80),
@@ -221,7 +251,7 @@ function buildPracticalQuestions(fabric: FabricData, allFabrics: FabricData[]): 
     if (q) questions.push(q)
   }
 
-  return questions
+  return capGenerated(questions)
 }
 
 function buildAfterSalesQuestions(fabric: FabricData, allFabrics: FabricData[]): QuizQuestion[] {
@@ -231,7 +261,7 @@ function buildAfterSalesQuestions(fabric: FabricData, allFabrics: FabricData[]):
   const questions: QuizQuestion[] = []
 
   for (const tip of tips.slice(0, 2)) {
-    const q = buildMcq(
+    const q = mcqGen(
       `fabric-as-${fabric.id}-${tip.slice(0, 8)}`,
       fabricFields(
         fabric,
@@ -245,15 +275,13 @@ function buildAfterSalesQuestions(fabric: FabricData, allFabrics: FabricData[]):
     if (q) questions.push(q)
   }
 
-  return questions
+  return capGenerated(questions)
 }
 
 function buildQuizModuleQuestions(fabric: FabricData): QuizQuestion[] {
   const label = FABRIC_MODULE_LABEL.quizzes
   return parseFabricQuizText(fabric).map((q) => ({
     ...q,
-    tagKey: fabric.category,
-    tagLabel: fabric.category,
     moduleKey: 'quizzes' as FabricQuizModuleKey,
     moduleLabel: label,
     prompt: q.prompt.startsWith('【') ? q.prompt : `【${label}】${q.prompt}`,

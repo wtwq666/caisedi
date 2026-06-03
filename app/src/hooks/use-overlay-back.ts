@@ -13,7 +13,10 @@ export function useOverlayBack(open: boolean, onClose: () => void, id: string) {
   useEffect(() => {
     if (!open) return
 
-    window.history.pushState({ overlayBack: id }, '')
+    const state = window.history.state as { overlayBack?: string } | null
+    if (state?.overlayBack !== id) {
+      window.history.pushState({ overlayBack: id }, '')
+    }
     pushedRef.current = true
 
     const onPopState = () => {
@@ -24,22 +27,28 @@ export function useOverlayBack(open: boolean, onClose: () => void, id: string) {
     window.addEventListener('popstate', onPopState)
     return () => {
       window.removeEventListener('popstate', onPopState)
-      if (pushedRef.current) {
-        pushedRef.current = false
-        window.history.back()
-      }
+      // 不在卸载时 history.back()，避免 StrictMode 重挂载或 docx 预览卸载竞态导致闪退
+      pushedRef.current = false
     }
   }, [open, id])
 
   const requestClose = useCallback(() => {
     if (pushedRef.current) {
+      pushedRef.current = false
       window.history.back()
-    } else {
-      onCloseRef.current()
+      return
     }
+    onCloseRef.current()
   }, [])
 
-  useRegisterBackHandler(id, open, requestClose)
+  useRegisterBackHandler(id, open, () => {
+    if (pushedRef.current) {
+      pushedRef.current = false
+      window.history.back()
+      return
+    }
+    onCloseRef.current()
+  })
 
   return { requestClose }
 }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
   Search,
@@ -17,16 +17,19 @@ import { newsService } from '../services/newsService'
 import {
   getRecentLearning,
   getRecentLearningLink,
+  initRecentLearningFromApi,
 } from '../lib/recentLearningStorage'
+import { USE_MOCK } from '../api/config'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import BrandHero from '../components/BrandHero'
 import { useAuth } from '../context/AuthContext'
 import { useIsMobile } from '../hooks/use-mobile'
 import { getTagModuleProgress } from '../lib/quizRecordsStorage'
 import {
+  getContentUpdateActionBadge,
   getContentUpdateTypeBadge,
-  getRecentContentUpdates,
 } from '../lib/recentContentUpdates'
+import { contentUpdatesService } from '../services/contentUpdatesService'
 
 const quickEntries = [
   { title: '公司文化', desc: '了解企业文化与门店风采', icon: Building2, path: '/culture' },
@@ -40,7 +43,7 @@ const mobileQuickEntries = [
   { title: '公司文化', desc: '品牌与门店风采', icon: Building2, path: '/culture' },
   { title: '新闻通知', desc: '公告与培训通知', icon: Newspaper, path: '/news' },
   { title: '我的答题', desc: '测验成绩与记录', icon: ClipboardCheck, path: '/quiz-records' },
-  { title: '最近更新', desc: '资料与内容动态', icon: Sparkles, path: '/recent-updates' },
+  { title: '资料更新', desc: '网站新增或修改的文档', icon: Sparkles, path: '/changelog' },
 ]
 
 export default function Dashboard() {
@@ -50,7 +53,13 @@ export default function Dashboard() {
   const isMobile = useIsMobile()
   const entries = isMobile ? mobileQuickEntries : quickEntries
   const unreadNewsCount = useMemo(() => newsService.unreadCount(), [location.key])
-  const recentLearning = useMemo(() => getRecentLearning(3), [location.key])
+  const [recentTick, setRecentTick] = useState(0)
+  const recentLearning = useMemo(() => getRecentLearning(3), [location.key, recentTick])
+
+  useEffect(() => {
+    if (!user || USE_MOCK) return
+    void initRecentLearningFromApi().then(() => setRecentTick((n) => n + 1))
+  }, [user])
   const fabricTagProgress = user ? getTagModuleProgress(user.id, 'fabric') : []
   const productTagProgress = user ? getTagModuleProgress(user.id, 'product') : []
   const countTestedModules = (tags: ReturnType<typeof getTagModuleProgress>) =>
@@ -67,7 +76,13 @@ export default function Dashboard() {
     .sort((a, b) => new Date(b.publishTime).getTime() - new Date(a.publishTime).getTime())
     .slice(0, 4)
 
-  const recentContentUpdates = getRecentContentUpdates(6)
+  const [recentContentUpdates, setRecentContentUpdates] = useState(() =>
+    contentUpdatesService.list().slice(0, 6),
+  )
+
+  useEffect(() => {
+    void contentUpdatesService.fetchAll({ limit: 6 }).then(setRecentContentUpdates)
+  }, [location.key])
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-4">
@@ -250,10 +265,10 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-primary" />
-            <h3 className="text-base font-medium text-foreground">最近更新</h3>
+            <h3 className="text-base font-medium text-foreground">资料更新</h3>
           </div>
           <Link
-            to="/recent-updates"
+            to="/changelog"
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
           >
             查看全部
@@ -273,6 +288,11 @@ export default function Dashboard() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded ${getContentUpdateActionBadge(item.action)}`}
+                    >
+                      {item.action}
+                    </span>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded ${getContentUpdateTypeBadge(item.type)}`}
                     >

@@ -1,0 +1,98 @@
+[
+  {
+    "employeeId": 1,
+    "username": "KS20250001",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 2,
+    "username": "KS20250002",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 3,
+    "username": "KS20250003",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 4,
+    "username": "KS20250004",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 5,
+    "username": "KS20250005",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 6,
+    "username": "KS20250006",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 7,
+    "username": "KS20250007",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 8,
+    "username": "KS20250008",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 9,
+    "username": "KS20250009",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 10,
+    "username": "KS20250010",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 11,
+    "username": "13046313228",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 12,
+    "username": "18586783961",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 13,
+    "username": "15019786653",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 14,
+    "username": "13798952720",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 15,
+    "username": "18476084400",
+    "password": "123456",
+    "enabled": true
+  },
+  {
+    "employeeId": 16,
+    "username": "18927487689",
+    "password": "123456",
+    "enabled": true
+  }
+]

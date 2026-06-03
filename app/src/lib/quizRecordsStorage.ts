@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import type {
   ModuleProgressSummary,
   QuizModuleAttempt,
@@ -6,6 +7,15 @@ import type {
   TagProgressSummary,
 } from '../types/quizRecord'
 import type { QuizSource } from '../types/quiz'
+import { USE_MOCK } from '../api/config'
+import {
+  deleteQuizDraft as apiDeleteDraft,
+  getApiAttempts,
+  getApiDrafts,
+  postQuizAttempt,
+  pushApiAttempt,
+  putQuizDraft,
+} from '../services/userStateApi'
 import { getModuleStatsForTag, getTagList } from './knowledgeQuizPool'
 
 const STORAGE_KEY = 'caisedi_quiz_attempts_v2'
@@ -24,6 +34,8 @@ function migrateAttempts(raw: unknown): QuizModuleAttempt[] {
 }
 
 function readAll(): QuizModuleAttempt[] {
+  const api = getApiAttempts()
+  if (!USE_MOCK && api) return api
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) {
@@ -45,9 +57,20 @@ function writeAll(attempts: QuizModuleAttempt[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(attempts))
 }
 
-export function saveQuizAttempt(
+export async function saveQuizAttempt(
   attempt: Omit<QuizModuleAttempt, 'id' | 'completedAt'> & { completedAt?: string },
-): QuizModuleAttempt {
+): Promise<QuizModuleAttempt> {
+  if (!USE_MOCK) {
+    try {
+      const saved = await postQuizAttempt(attempt)
+      pushApiAttempt(saved)
+      return saved
+    } catch (err) {
+      console.error('[quiz] save attempt failed', err)
+      toast.error('测验成绩保存失败，请稍后重试')
+      throw err
+    }
+  }
   const record: QuizModuleAttempt = {
     ...attempt,
     id: `${attempt.employeeId}-${attempt.source}-${attempt.tagKey}-${attempt.moduleKey}-${Date.now()}`,
@@ -66,6 +89,8 @@ export function getAttemptsByEmployee(employeeId: number): QuizModuleAttempt[] {
 }
 
 function readDrafts(): QuizModuleDraft[] {
+  const api = getApiDrafts()
+  if (!USE_MOCK && api) return api
   try {
     const raw = localStorage.getItem(DRAFT_STORAGE_KEY)
     if (!raw) return []
@@ -110,7 +135,21 @@ export function saveQuizDraft(
   const rest = readDrafts().filter(
     (d) => draftKey(d.employeeId, d.source, d.tagKey, d.moduleKey) !== key,
   )
-  writeDrafts([record, ...rest])
+  if (USE_MOCK) {
+    writeDrafts([record, ...rest])
+  } else {
+    void putQuizDraft({
+      source: record.source,
+      tagKey: record.tagKey,
+      moduleKey: record.moduleKey,
+      answeredCount: record.answeredCount,
+      currentIndex: record.currentIndex,
+      totalCount: record.totalCount,
+    }).catch((err) => {
+      console.error('[quiz] save draft failed', err)
+      toast.error('测验进度保存失败')
+    })
+  }
   return record
 }
 
@@ -121,11 +160,17 @@ export function clearQuizDraft(
   moduleKey: string,
 ) {
   const key = draftKey(employeeId, source, tagKey, moduleKey)
-  writeDrafts(
-    readDrafts().filter(
-      (d) => draftKey(d.employeeId, d.source, d.tagKey, d.moduleKey) !== key,
-    ),
+  const filtered = readDrafts().filter(
+    (d) => draftKey(d.employeeId, d.source, d.tagKey, d.moduleKey) !== key,
   )
+  if (USE_MOCK) {
+    writeDrafts(filtered)
+  } else {
+    void apiDeleteDraft(source, tagKey, moduleKey).catch((err) => {
+      console.error('[quiz] delete draft failed', err)
+      toast.error('清除草稿失败')
+    })
+  }
 }
 
 export function getModuleStatus(

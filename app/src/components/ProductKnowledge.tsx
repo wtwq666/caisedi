@@ -11,7 +11,7 @@ import {
   MapPin,
   Sparkles,
 } from 'lucide-react'
-import { productList } from '../data/productData'
+import { productService } from '../services/productService'
 import { recordRecentLearning } from '../lib/recentLearningStorage'
 import type { ProductData } from '../types/product'
 import { useOverlayBack } from '../hooks/use-overlay-back'
@@ -40,10 +40,10 @@ function ProductKnowledgeDetail({ product }: { product: ProductData }) {
   ]
 
   return (
-    <>
-      <div className="px-4 py-2.5 border-b border-[#F0F0F0] shrink-0">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="px-4 md:px-5 py-2.5 md:py-3 border-b border-[#F0F0F0] shrink-0">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-lg font-semibold text-[#262626] truncate">{product.name}</h2>
+          <h2 className="text-lg md:text-xl font-semibold text-[#262626] truncate">{product.name}</h2>
           <span className="px-2 py-0.5 bg-[#E6F7FF] text-[#1890FF] text-xs rounded font-medium">
             {product.productCode}
           </span>
@@ -52,7 +52,7 @@ function ProductKnowledgeDetail({ product }: { product: ProductData }) {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 md:p-5">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 md:px-6 md:py-5">
         <div className="flex flex-col md:flex-row gap-6">
           <div className="w-full md:w-[280px] md:flex-shrink-0">
             {product.imageUrl ? (
@@ -161,7 +161,7 @@ function ProductKnowledgeDetail({ product }: { product: ProductData }) {
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
@@ -179,7 +179,7 @@ export default function ProductKnowledge({
   const [showFilters, setShowFilters] = useState(false)
 
   const filteredProducts = useMemo(() => {
-    return productList.filter((p) => {
+    return productService.list().filter((p) => {
       const matchSearch =
         searchText === '' ||
         p.productCode.includes(searchText) ||
@@ -216,7 +216,7 @@ export default function ProductKnowledge({
 
   useEffect(() => {
     if (initialProductId == null) return
-    const p = productList.find((item) => item.id === initialProductId)
+    const p = productService.list().find((item) => item.id === initialProductId)
     if (!p) return
     setFilterSeries(p.series)
     setSelectedProduct(p)
@@ -238,10 +238,11 @@ export default function ProductKnowledge({
   return (
     <>
       <div
-        className={`flex flex-col md:flex-row gap-3 md:flex-1 md:min-h-0 md:h-full ${className}`}
+        className={`flex flex-col flex-1 min-h-0 h-full overflow-hidden gap-2 ${className}`}
       >
-        <div className="w-full md:w-[300px] lg:w-[320px] md:flex-shrink-0 flex flex-col gap-2 md:min-h-0 md:max-h-full">
-          <div className="bg-white rounded-lg p-3">
+        <div className="flex flex-col md:flex-row gap-2.5 md:gap-3 flex-1 min-h-0 h-full overflow-hidden">
+        <div className="w-full md:w-[min(38%,420px)] lg:w-[440px] md:shrink-0 flex flex-col gap-2 md:gap-2.5 min-h-0 max-md:max-h-[min(56vh,24rem)] md:h-full">
+          <div className="shrink-0 bg-white rounded-lg border border-[#F0F0F0] p-3 md:p-3.5">
             <div className="flex items-center gap-2 h-9 px-3 rounded border border-[#D9D9D9] bg-white mb-2">
               <Search size={14} className="text-[#8C8C8C]" />
               <input
@@ -323,17 +324,17 @@ export default function ProductKnowledge({
             )}
           </div>
 
-          <div className="bg-white rounded-lg flex-1 min-h-[200px] md:min-h-0 overflow-hidden flex flex-col">
-            <div className="px-3 py-2 border-b border-[#F0F0F0] flex items-center justify-between shrink-0">
-              <span className="text-sm font-medium text-[#262626]">商品列表</span>
-              <span className="text-xs text-[#8C8C8C]">{filteredProducts.length} 件</span>
+          <div className="bg-white rounded-lg flex flex-col flex-1 min-h-0 overflow-hidden border border-[#F0F0F0]">
+            <div className="px-3.5 py-2.5 border-b border-[#F0F0F0] flex items-center justify-between shrink-0">
+              <span className="text-sm md:text-[15px] font-medium text-[#262626]">商品列表</span>
+              <span className="text-xs md:text-sm text-[#8C8C8C]">{filteredProducts.length} 件</span>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2 space-y-1">
               {filteredProducts.map((p) => (
                 <button
                   key={p.id}
                   type="button"
-                  className={`w-full text-left px-3 py-2.5 rounded-md transition-colors ${
+                  className={`w-full text-left px-3 py-2.5 md:py-3 rounded-md transition-colors ${
                     listHighlightId === p.id
                       ? 'bg-[#E6F7FF] text-[#1890FF]'
                       : 'text-[#595959] hover:bg-[#F5F5F5]'
@@ -353,7 +354,7 @@ export default function ProductKnowledge({
                       </div>
                     )}
                     <div className="min-w-0">
-                      <div className="text-sm font-medium truncate">{p.name}</div>
+                      <div className="text-sm md:text-[15px] font-medium truncate">{p.name}</div>
                       <div className="text-xs mt-0.5 flex items-center gap-1">
                         <span className="truncate">{p.productCode}</span>
                         <span className="text-[#8C8C8C]">·</span>
@@ -369,14 +370,15 @@ export default function ProductKnowledge({
           </div>
         </div>
 
-        <div className="hidden md:flex flex-1 min-w-0 min-h-0 bg-white rounded-lg flex-col overflow-hidden">
+        <div className="hidden md:flex flex-1 min-w-0 min-h-0 h-full bg-white rounded-lg border border-[#F0F0F0] flex-col overflow-hidden">
           {displayProduct ? (
             <ProductKnowledgeDetail product={displayProduct} />
           ) : (
-            <div className="flex flex-1 items-center justify-center text-sm text-[#8C8C8C]">
+            <div className="flex flex-1 min-h-0 items-center justify-center text-sm text-[#8C8C8C]">
               请选择商品查看详情
             </div>
           )}
+        </div>
         </div>
       </div>
 

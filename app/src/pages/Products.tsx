@@ -91,15 +91,21 @@ export default function Products() {
       title: product.name,
       subtitle: product.productCode,
     })
+    // 仅用 URL 记录当前详情，不写入搜索框（避免关闭后列表被筛成 1 条）
     setSearchParams({ code: product.productCode }, { replace: true })
   }
 
   const closeProduct = () => {
+    const closedCode = selectedProduct?.productCode
     setSelectedProduct(null)
     if (searchParams.has('code')) {
       const next = new URLSearchParams(searchParams)
       next.delete('code')
       setSearchParams(next, { replace: true })
+    }
+    // 若搜索框是打开详情时误带的货号，关闭后恢复全量列表
+    if (closedCode && searchText.trim() === closedCode) {
+      setSearchText('')
     }
   }
 
@@ -113,19 +119,16 @@ export default function Products() {
     if (initialProductId == null) return
     const p = productService.getById(initialProductId)
     if (!p) return
-    setSearchText(p.productCode)
     setSelectedProduct(p)
     setSearchParams({ code: p.productCode }, { replace: true })
     window.history.replaceState({}, document.title)
-  }, [initialProductId, isMobile, setSearchParams])
+  }, [initialProductId, setSearchParams])
 
   useEffect(() => {
     const code = searchParams.get('code')
     if (!code) return
     const p = productService.getByCode(code)
-    if (!p) return
-    setSearchText(p.productCode)
-    setSelectedProduct(p)
+    if (p) setSelectedProduct(p)
   }, [searchParams])
 
   const filteredProducts = useMemo(() => {

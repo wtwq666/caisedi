@@ -1,34 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ClipboardCheck, BookOpen, Package, ChevronRight } from 'lucide-react'
+import { ClipboardCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import PageBreadcrumb from '../components/PageBreadcrumb'
-import {
-  getModuleStatus,
-  getTagModuleProgress,
-  getAttemptsByEmployee,
-} from '../lib/quizRecordsStorage'
-import type { QuizModuleStatus } from '../types/quizRecord'
-
-const MODULE_STATUS_LABEL: Record<QuizModuleStatus, string> = {
-  not_started: '未答题',
-  in_progress: '进行中',
-  completed: '已完成',
-}
-
-function ModuleStatusPill({ status }: { status: QuizModuleStatus }) {
-  const styles: Record<QuizModuleStatus, string> = {
-    not_started: 'bg-[#F5F5F5] text-[#8C8C8C]',
-    in_progress: 'bg-[#FFF7E6] text-[#D48806]',
-    completed: 'bg-[#F6FFED] text-[#52C41A]',
-  }
-  return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded ${styles[status]}`}>
-      {MODULE_STATUS_LABEL[status]}
-    </span>
-  )
-}
+import QuizProgressBoard from '../components/QuizProgressBoard'
+import { getTagModuleProgress, getAttemptsByEmployee } from '../lib/quizRecordsStorage'
 
 function ScoreBadge({ score }: { score: number }) {
   const color =
@@ -42,102 +18,27 @@ function ScoreBadge({ score }: { score: number }) {
   return <span className={`text-xs font-medium px-2 py-0.5 rounded ${color}`}>{score}%</span>
 }
 
-function TagProgressSection({ source }: { source: 'fabric' | 'product' }) {
-  const { user } = useAuth()
-  const tagProgress = useMemo(
-    () => (user ? getTagModuleProgress(user.id, source) : []),
-    [user, source],
-  )
-
-  const title = source === 'fabric' ? '面料知识（按分类标签）' : '商品资料（按系列标签）'
-  const Icon = source === 'fabric' ? BookOpen : Package
-
-  return (
-    <div className="bg-white rounded-lg border border-[#F0F0F0] overflow-hidden">
-      <div className="px-5 py-4 border-b border-[#F0F0F0] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Icon size={18} className="text-primary" />
-          <h2 className="text-base font-semibold text-[#262626]">{title}</h2>
-        </div>
-        <Link
-          to="/knowledge"
-          state={{ openQuiz: source }}
-          className="text-xs text-primary hover:underline flex items-center gap-0.5"
-        >
-          去测验
-          <ChevronRight size={12} />
-        </Link>
-      </div>
-      <div className="divide-y divide-[#F0F0F0]">
-        {tagProgress.map((tag) => {
-          const tested = tag.modules.filter((m) => m.attemptCount > 0).length
-          const total = tag.modules.length
-          return (
-            <div key={tag.tagKey} className="px-5 py-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-[#262626]">{tag.tagLabel}</span>
-                <span className="text-xs text-[#8C8C8C]">
-                  已测 {tested}/{total} 个模块
-                </span>
-              </div>
-              <div className="space-y-2">
-                {tag.modules.map((m) => {
-                  const status =
-                    user != null
-                      ? getModuleStatus(user.id, source, tag.tagKey, m.moduleKey)
-                      : 'not_started'
-                  return (
-                    <Link
-                      key={m.moduleKey}
-                      to="/knowledge"
-                      state={{
-                        openQuiz: source,
-                        quizTagKey: tag.tagKey,
-                        quizModuleKey: m.moduleKey,
-                      }}
-                      className="flex items-center justify-between gap-2 pl-3 border-l-2 border-[#F0F0F0] py-1.5 -mx-1 px-1 rounded hover:bg-[#F5F5F5] transition-colors group"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-xs text-[#262626] group-hover:text-primary">
-                          {m.moduleLabel}
-                        </p>
-                        <p className="text-[10px] text-[#8C8C8C]">{m.questionCount} 题</p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <ModuleStatusPill status={status} />
-                        {m.bestScore != null ? (
-                          <ScoreBadge score={m.bestScore} />
-                        ) : (
-                          <ChevronRight
-                            size={14}
-                            className="text-[#D9D9D9] group-hover:text-primary"
-                          />
-                        )}
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 export default function MyQuizRecords() {
   useDocumentTitle('我的答题')
   const { user } = useAuth()
   const [tab, setTab] = useState<'progress' | 'history'>('progress')
+  const [sourceTab, setSourceTab] = useState<'fabric' | 'product'>('fabric')
 
+  const fabricProgress = useMemo(
+    () => (user ? getTagModuleProgress(user.id, 'fabric') : []),
+    [user, tab],
+  )
+  const productProgress = useMemo(
+    () => (user ? getTagModuleProgress(user.id, 'product') : []),
+    [user, tab],
+  )
   const attempts = useMemo(
     () => (user ? getAttemptsByEmployee(user.id) : []),
     [user, tab],
   )
 
   return (
-    <div className="max-w-[1000px] mx-auto space-y-6">
+    <div className="max-w-[960px] mx-auto space-y-4 md:space-y-6">
       <PageBreadcrumb items={[{ label: '学习平台', to: '/' }, { label: '我的答题' }]} />
 
       <div>
@@ -146,7 +47,7 @@ export default function MyQuizRecords() {
           我的答题
         </h1>
         <p className="app-page-local-subtitle text-sm text-[#8C8C8C] mt-1">
-          {user?.name}（{user?.employeeNo}）· 按分类标签 + 知识模块记录成绩
+          {user?.name}（{user?.employeeNo}）
         </p>
       </div>
 
@@ -158,7 +59,7 @@ export default function MyQuizRecords() {
             tab === 'progress' ? 'bg-primary text-white' : 'bg-[#F5F5F5] text-[#595959]'
           }`}
         >
-          标签与模块进度
+          学习进度
         </button>
         <button
           type="button"
@@ -171,14 +72,36 @@ export default function MyQuizRecords() {
         </button>
       </div>
 
-      {tab === 'progress' && (
-        <div className="space-y-4">
-          <p className="text-xs text-[#8C8C8C] leading-relaxed">
-            面料按「天然纤维、合成纤维…」等标签测验；商品按「生活、通勤…」等系列标签测验。每个标签下需完成各知识模块。
-          </p>
-          <TagProgressSection source="fabric" />
-          <TagProgressSection source="product" />
-        </div>
+      {tab === 'progress' && user && (
+        <>
+          <div className="flex rounded-lg border border-[#F0F0F0] p-0.5 bg-[#FAFAFA]">
+            <button
+              type="button"
+              onClick={() => setSourceTab('fabric')}
+              className={`flex-1 h-9 rounded-md text-sm font-medium transition-colors ${
+                sourceTab === 'fabric' ? 'bg-white text-[#1890FF] shadow-sm' : 'text-[#595959]'
+              }`}
+            >
+              面料知识
+            </button>
+            <button
+              type="button"
+              onClick={() => setSourceTab('product')}
+              className={`flex-1 h-9 rounded-md text-sm font-medium transition-colors ${
+                sourceTab === 'product' ? 'bg-white text-[#1890FF] shadow-sm' : 'text-[#595959]'
+              }`}
+            >
+              商品资料
+            </button>
+          </div>
+
+          <QuizProgressBoard
+            key={sourceTab}
+            source={sourceTab}
+            employeeId={user.id}
+            tagProgress={sourceTab === 'fabric' ? fabricProgress : productProgress}
+          />
+        </>
       )}
 
       {tab === 'history' && (
@@ -192,7 +115,7 @@ export default function MyQuizRecords() {
                   <tr className="bg-[#FAFAFA] text-left text-xs text-[#8C8C8C]">
                     <th className="px-4 py-3 font-medium">时间</th>
                     <th className="px-4 py-3 font-medium">类型</th>
-                    <th className="px-4 py-3 font-medium">标签</th>
+                    <th className="px-4 py-3 font-medium">品类</th>
                     <th className="px-4 py-3 font-medium">模块</th>
                     <th className="px-4 py-3 font-medium">得分</th>
                     <th className="px-4 py-3 font-medium">正确</th>

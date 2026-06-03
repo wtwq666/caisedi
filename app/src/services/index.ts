@@ -1,3 +1,7 @@
 export { newsService } from './newsService'
 export { productService } from './productService'
 export { fabricService } from './fabricService'
+export { documentService } from './documentService'
+export { storeAlbumService } from './storeAlbumService'
+export { contentUpdatesService } from './contentUpdatesService'
+export { authApi } from './authApi'

@@ -1,3 +1,6 @@
+import { apiRequest } from '../api/client'
+import { USE_MOCK } from '../api/config'
+
 export type RecentLearningItem =
   | {
       type: 'fabric'
@@ -17,7 +20,18 @@ export type RecentLearningItem =
 const STORAGE_KEY = 'caisedi_recent_learning_v1'
 const MAX_ITEMS = 8
 
+let apiCache: RecentLearningItem[] | null = null
+
+export async function initRecentLearningFromApi(): Promise<void> {
+  if (USE_MOCK) return
+  const rows = await apiRequest<
+    Array<{ type: string; id: number; title: string; subtitle?: string; viewedAt: string }>
+  >('/learning/recent?limit=8')
+  apiCache = rows as RecentLearningItem[]
+}
+
 function readAll(): RecentLearningItem[] {
+  if (!USE_MOCK && apiCache) return apiCache
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
@@ -37,9 +51,21 @@ export function recordRecentLearning(
 ): void {
   const now = new Date().toISOString()
   const entry = { ...item, viewedAt: now } as RecentLearningItem
-  const rest = readAll().filter(
-    (x) => !(x.type === entry.type && x.id === entry.id),
-  )
+  if (!USE_MOCK) {
+    void apiRequest('/learning/recent', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: entry.type,
+        id: entry.id,
+        title: entry.title,
+        subtitle: entry.subtitle,
+      }),
+    })
+      .then(() => initRecentLearningFromApi())
+      .catch((err) => console.error('[learning] record recent failed', err))
+    return
+  }
+  const rest = readAll().filter((x) => !(x.type === entry.type && x.id === entry.id))
   writeAll([entry, ...rest].slice(0, MAX_ITEMS))
 }
 

@@ -12,6 +12,8 @@ export interface QuizModuleAttempt {
   totalCount: number
   scorePercent: number
   completedAt: string
+  /** 本轮题目 id，便于复盘 */
+  questionIds?: string[]
 }
 
 export interface TagProgressSummary {

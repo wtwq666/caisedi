@@ -1,10 +1,13 @@
+import { storeStaffAuthAccounts } from './storeStaffSeed'
+
 /**
  * 账号由后台开通，不支持自助注册。
  * 新增员工：在 employeeData 添加档案后，在此追加 username / password / enabled。
+ * 门店员工：username 使用手机号；演示账号仍可使用工号。
  */
 export interface AuthAccount {
   employeeId: number
-  /** 登录名，默认使用工号 */
+  /** 登录名：门店员工为手机号，演示账号为工号 */
   username: string
   password: string
   enabled: boolean
@@ -24,12 +27,14 @@ export const authAccounts: AuthAccount[] = [
   { employeeId: 8, username: 'KS20250008', password: DEFAULT_PASSWORD, enabled: true },
   { employeeId: 9, username: 'KS20250009', password: DEFAULT_PASSWORD, enabled: true },
   { employeeId: 10, username: 'KS20250010', password: DEFAULT_PASSWORD, enabled: true },
+  ...storeStaffAuthAccounts,
 ]
 
 export function findAuthAccount(username: string, password: string): AuthAccount | null {
   const u = username.trim()
-  const account = authAccounts.find(
-    (a) => a.enabled && a.username.toLowerCase() === u.toLowerCase() && a.password === password,
+  return (
+    authAccounts.find(
+      (a) => a.enabled && a.password === password && a.username.toLowerCase() === u.toLowerCase(),
+    ) ?? null
   )
-  return account ?? null
 }

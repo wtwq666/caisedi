@@ -1,5 +1,7 @@
 export type QuizSource = 'fabric' | 'product'
 
+export type QuizQuestionOrigin = 'author' | 'generated'
+
 export interface QuizOption {
   key: string
   label: string
@@ -25,6 +27,8 @@ export interface QuizQuestion {
   multiSelect: boolean
   imageUrl?: string
   reveal?: QuizProductReveal
+  /** author=教材原文题；generated=规则自动生成 */
+  origin?: QuizQuestionOrigin
 }
 
 export interface QuizAnswerRecord {
@@ -36,5 +40,8 @@ export interface QuizAnswerRecord {
 export interface QuizModuleStat {
   key: string
   label: string
+  /** 题库总量 */
   count: number
+  /** 每轮实际题数 */
+  sessionSize: number
 }

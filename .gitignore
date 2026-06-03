@@ -1,0 +1,19 @@
+# Local asset blobs (keep structure via .gitkeep)
+storage/**/*
+!storage/**/.gitkeep
+!storage/README.md
+
+# Python
+api/.venv/
+api/__pycache__/
+api/**/__pycache__/
+api/.pytest_cache/
+api/.env
+*.pyc
+
+# DB
+*.db
+
+# IDE
+.idea/
+.vscode/

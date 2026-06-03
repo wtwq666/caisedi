@@ -1,7 +1,7 @@
-import { fabricCategories } from '../data/fabricData'
+import { FABRIC_QUIZ_TAG_OPTIONS } from './fabricCategoryTaxonomy'
 
-/** 与面料知识页分类标签一致 */
-export const FABRIC_QUIZ_TAGS = fabricCategories
+/** 与面料知识页二级分类一致（含暂无面料的空分类） */
+export const FABRIC_QUIZ_TAGS = FABRIC_QUIZ_TAG_OPTIONS
 
 /** 与商品资料系列筛选一致 */
 export const PRODUCT_QUIZ_TAGS = [

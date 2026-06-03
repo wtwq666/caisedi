@@ -1,3 +1,4 @@
+import { getFabricCategoryTag } from '../constants/fabricCategoryTaxonomy'
 import type { FabricData } from '../types/fabric'
 import type { QuizQuestion } from '../types/quiz'
 
@@ -58,11 +59,12 @@ export function parseFabricQuizText(
 
     const multiSelect = /多选/.test(prompt) || correctKeys.length > 1
 
+    const { tagKey, tagLabel } = getFabricCategoryTag(fabric)
     questions.push({
       id: `fabric-quiz-${fabric.fabricCode}-${blockIndex}`,
       source: 'fabric',
-      tagKey: fabric.category,
-      tagLabel: fabric.category,
+      tagKey,
+      tagLabel,
       moduleKey: 'quizzes',
       moduleLabel: '课后测试',
       topic: fabric.fabricName,
@@ -70,8 +72,13 @@ export function parseFabricQuizText(
       options,
       correctKeys,
       multiSelect,
+      origin: 'author',
     })
   })
+
+  if (import.meta.env.DEV && blocks.length > 0 && questions.length === 0) {
+    console.warn(`[quiz] 课后习题解析失败: ${fabric.fabricCode} ${fabric.fabricName}`)
+  }
 
   return questions
 }

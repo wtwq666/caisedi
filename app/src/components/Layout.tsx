@@ -4,7 +4,6 @@ import {
   Menu,
   LogOut,
   UserCircle,
-  Sparkles,
   ChevronDown,
   ClipboardCheck,
   ChevronLeft,
@@ -20,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
-import GlobalSearch, { GlobalSearchTrigger, useGlobalSearchShortcut } from './GlobalSearch'
+import { GlobalSearchBar } from './GlobalSearch'
 import AnimatedOutlet from './AnimatedOutlet'
 import MobileTabBar from './MobileTabBar'
 import { useAuth } from '../context/AuthContext'
@@ -43,8 +42,6 @@ export default function Layout() {
   const isMobile = useIsMobile()
   const useMobileShell = isMobile
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
-
   const showTabBar = useMobileShell && isMobileTabPath(location.pathname)
   const showMobileBack = useMobileShell && !isMobileTabPath(location.pathname)
   const showMobileMenu = useMobileShell && isMobileRootPath(location.pathname) && !isMobileTabPath(location.pathname)
@@ -58,11 +55,9 @@ export default function Layout() {
     .filter(Boolean)
     .join(' ')
 
-  useGlobalSearchShortcut(() => setSearchOpen(true))
   useEdgeSwipeBack(useMobileShell)
 
   useRegisterBackHandler('layout-nav', mobileNavOpen, () => setMobileNavOpen(false))
-  useRegisterBackHandler('layout-search', searchOpen, () => setSearchOpen(false))
 
   const handleMobileBack = () => {
     navigateMobileBack(navigate, location.pathname)
@@ -106,15 +101,9 @@ export default function Layout() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/recent-updates" className="flex items-center gap-2 cursor-pointer">
-            <Sparkles size={14} />
-            最近更新
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
           <Link to="/changelog" className="flex items-center gap-2 cursor-pointer">
             <History size={14} />
-            更新公告
+            资料更新
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -167,12 +156,9 @@ export default function Layout() {
                     </div>
                     <h1 className="app-header-title">{mobileTitle}</h1>
                   </div>
-                  <div className="app-header-actions">
-                    <GlobalSearchTrigger variant="icon" onClick={() => setSearchOpen(true)} />
-                    {userMenu}
-                  </div>
+                  <div className="app-header-actions shrink-0">{userMenu}</div>
                 </div>
-                <GlobalSearchTrigger onClick={() => setSearchOpen(true)} />
+                <GlobalSearchBar variant="mobile-bar" className="w-full" />
               </div>
             ) : (
               <div className="app-header-compact-layout">
@@ -198,9 +184,7 @@ export default function Layout() {
                 <h1 className="app-header-title app-header-title--single truncate flex-1 min-w-0">
                   {mobileTitle}
                 </h1>
-                <div className="app-header-actions shrink-0">
-                  <GlobalSearchTrigger variant="icon" onClick={() => setSearchOpen(true)} />
-                </div>
+                <GlobalSearchBar variant="icon-only" />
               </div>
             )
           ) : (
@@ -213,12 +197,10 @@ export default function Layout() {
               >
                 <Menu size={20} />
               </button>
-              <GlobalSearchTrigger onClick={() => setSearchOpen(true)} />
+              <GlobalSearchBar variant="header" className="flex-1 min-w-0 max-w-[420px]" />
               <div className="flex items-center gap-2 md:gap-3 ml-auto shrink-0">{userMenu}</div>
             </>
           )}
-
-          <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
           </div>
         </header>
 

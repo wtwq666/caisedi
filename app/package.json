@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "export:seed": "tsx scripts/exportSeedData.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",

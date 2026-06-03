@@ -4,7 +4,6 @@ import {
   ClipboardCheck,
   History,
   Newspaper,
-  Sparkles,
 } from 'lucide-react'
 import { useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
@@ -18,8 +17,7 @@ const profileLinks = [
   { to: '/news', label: '新闻通知', icon: Newspaper, showUnread: true },
   { to: '/culture', label: '公司文化', icon: Building2 },
   { to: '/quiz-records', label: '我的答题', icon: ClipboardCheck },
-  { to: '/recent-updates', label: '最近更新', icon: Sparkles },
-  { to: '/changelog', label: '更新公告', icon: History },
+  { to: '/changelog', label: '资料更新', icon: History },
 ]
 
 export default function Profile() {
@@ -84,10 +82,6 @@ export default function Profile() {
           ))}
         </dl>
       </section>
-
-      <p className="text-xs text-[#8C8C8C] text-center mt-6 leading-relaxed px-4">
-        如有变更请联系门店店长或总部人事。
-      </p>
     </div>
   )
 }

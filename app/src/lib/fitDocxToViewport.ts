@@ -35,15 +35,20 @@ export function fitDocxToViewport(stage: HTMLElement, userZoom = 1): number {
   const wrapper = getDocxWrapper(stage)
   if (!wrapper) return 1
 
-  wrapper.style.transform = ''
-  wrapper.style.zoom = ''
-  wrapper.style.width = ''
-  wrapper.style.margin = ''
-
   const available = getStageWidth(stage)
   const pageWidth = measurePageWidth(wrapper)
   const baseScale = Math.min(1, available / pageWidth)
   const scale = baseScale * userZoom
+  const fitKey = `${Math.round(available)}-${Math.round(pageWidth)}-${scale.toFixed(3)}`
+  if (wrapper.dataset.fitKey === fitKey) {
+    return scale
+  }
+  wrapper.dataset.fitKey = fitKey
+
+  wrapper.style.transform = ''
+  wrapper.style.zoom = ''
+  wrapper.style.width = ''
+  wrapper.style.margin = ''
 
   wrapper.dataset.baseScale = String(baseScale)
   wrapper.dataset.pageWidth = String(pageWidth)
@@ -80,6 +85,12 @@ function parseLengthPx(value: string): number | null {
   return n
 }
 
+/** 按屏宽计算舒适正文字号（接近企微文档阅读） */
+export function getMobileDocxFontSize(viewportW: number): number {
+  const w = viewportW || window.visualViewport?.width || window.innerWidth
+  return Math.round(Math.min(17, Math.max(14, w * 0.042)))
+}
+
 /** 手机满宽网页式重排：去掉 docx 内联固定宽度，表格可横滑 */
 export function finalizeDocxReflow(stage: HTMLElement): void {
   const root = stage.querySelector<HTMLElement>('.doc-viewer-docx-root')
@@ -90,6 +101,10 @@ export function finalizeDocxReflow(stage: HTMLElement): void {
     root.getBoundingClientRect().width ||
     window.visualViewport?.width ||
     window.innerWidth
+
+  const fontPx = getMobileDocxFontSize(viewportW)
+  root.style.fontSize = `${fontPx}px`
+  root.style.lineHeight = '1.65'
 
   const wrapper = getDocxWrapper(stage)
   if (wrapper) {
@@ -108,12 +123,14 @@ export function finalizeDocxReflow(stage: HTMLElement): void {
   root.style.maxWidth = '100%'
   root.style.minWidth = '0'
 
+  const hPad = Math.max(12, Math.min(16, Math.round(viewportW * 0.04)))
+
   root.querySelectorAll<HTMLElement>('section.docx').forEach((page) => {
     page.style.width = '100%'
     page.style.maxWidth = '100%'
     page.style.minWidth = '0'
     page.style.margin = '0'
-    page.style.padding = '0.75rem 0.875rem'
+    page.style.padding = `${hPad}px ${hPad}px`
     page.style.boxSizing = 'border-box'
     page.style.minHeight = ''
     page.style.height = 'auto'

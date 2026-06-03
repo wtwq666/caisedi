@@ -1,13 +1,16 @@
 import { useState, useMemo } from 'react'
-import { ScrollText, Search, X, Tag, BookOpen, Hash, Download, Eye } from 'lucide-react'
-import { brandIntroDocs, brandIntroCategories } from '../data/brandIntroData'
-import type { BrandIntroDoc } from '../data/brandIntroData'
+import { ScrollText, Search, X, Tag, BookOpen, Hash, Eye } from 'lucide-react'
+import { resolveDocumentFileUrl } from '../lib/getAssetUrl'
+import { brandIntroCategories } from '../data/brandIntroData'
+import { useDocuments } from '../hooks/useDocuments'
+import type { DocumentDto as BrandIntroDoc } from '../services/documentService'
 import DocViewer from './DocViewer'
 import MobileDetailBackBar from './MobileDetailBackBar'
 import { useIsMobile } from '../hooks/use-mobile'
 import { useMasterDetailMobile } from '../hooks/use-master-detail-mobile'
 
 export default function BrandIntroSystem() {
+  const { docs: brandIntroDocs } = useDocuments('brand')
   const isMobile = useIsMobile()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchText, setSearchText] = useState('')
@@ -23,9 +26,7 @@ export default function BrandIntroSystem() {
         doc.tags.some((t) => t.includes(searchText))
       return matchCategory && matchSearch
     })
-  }, [selectedCategory, searchText])
-
-  const downloadUrl = (doc: BrandIntroDoc) => `/training/${encodeURIComponent(doc.filename)}`
+  }, [brandIntroDocs, selectedCategory, searchText])
 
   const doc = selectedDoc || (!isMobile ? filteredDocs[0] : undefined)
   const hasMobileSelection = !!selectedDoc
@@ -167,14 +168,6 @@ export default function BrandIntroSystem() {
                 <Eye size={16} />
                 在线预览
               </button>
-              <a
-                href={downloadUrl(doc)}
-                download
-                className="flex items-center gap-2 px-5 py-2.5 text-[#1890FF] border border-[#1890FF] text-sm rounded hover:bg-[#E6F7FF] transition-colors"
-              >
-                <Download size={16} />
-                下载文档
-              </a>
             </div>
 
             {/* Content Overview */}
@@ -213,7 +206,7 @@ export default function BrandIntroSystem() {
 
       {previewDoc && (
         <DocViewer
-          fileUrl={downloadUrl(previewDoc)}
+          fileUrl={resolveDocumentFileUrl(previewDoc)}
           fileType="pdf"
           title={previewDoc.title}
           onClose={() => setPreviewDoc(null)}

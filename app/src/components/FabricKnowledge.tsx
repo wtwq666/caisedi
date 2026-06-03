@@ -11,7 +11,17 @@ import {
   ClipboardCheck,
   X,
 } from 'lucide-react'
-import { fabricList, fabricCategories, fabricModules } from '../data/fabricData'
+import { fabricModules } from '../data/fabricData'
+import {
+  FABRIC_CATEGORY_TREE,
+  countFabricsBySubcategory,
+  fabricMatchesCategoryFilter,
+  getFabricParentKey,
+  getFabricSubcategoryLabel,
+  getSubcategoriesForParent,
+  resolveFabricSubCategory,
+} from '../constants/fabricCategoryTaxonomy'
+import { fabricService } from '../services/fabricService'
 import { recordRecentLearning } from '../lib/recentLearningStorage'
 import type { FabricData, SalesScript, QAObjection, PracticalTraining } from '../types/fabric'
 import { useOverlayBack } from '../hooks/use-overlay-back'
@@ -232,12 +242,12 @@ function FabricDetailPanel({
     }
   }
 
-  const titleClassName = `font-semibold text-[#262626] truncate ${isMobile ? 'text-xl' : 'text-lg'}`
+  const titleClassName = `font-semibold text-[#262626] truncate ${isMobile ? 'text-xl' : 'text-xl'}`
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div
-        className={`shrink-0 border-b border-[#F0F0F0] bg-white ${isMobile ? 'px-4 pt-2 pb-2' : 'px-4 py-2.5'}`}
+        className={`shrink-0 border-b border-[#F0F0F0] bg-white ${isMobile ? 'px-4 pt-2 pb-2' : 'px-5 py-3'}`}
       >
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
@@ -250,7 +260,7 @@ function FabricDetailPanel({
               {fabric.fabricCode}
             </span>
             <span className="px-2 py-0.5 bg-[#FFF7E6] text-[#D48806] text-xs font-medium rounded">
-              {fabric.category}
+              {getFabricSubcategoryLabel(resolveFabricSubCategory(fabric))}
             </span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -281,8 +291,8 @@ function FabricDetailPanel({
         )}
       </div>
 
-      <div className="shrink-0 border-b border-[#F0F0F0] bg-[#FAFAFA]/80 px-3 py-2">
-        <div className="flex flex-wrap gap-1.5">
+      <div className={`shrink-0 border-b border-[#F0F0F0] bg-[#FAFAFA]/80 ${isMobile ? 'px-3 py-2' : 'px-4 py-2.5'}`}>
+        <div className="flex flex-wrap gap-2">
           {fabricModules.map((mod) => {
             const Icon = moduleIcons[mod.key]
             const active = activeModule === mod.key
@@ -291,13 +301,15 @@ function FabricDetailPanel({
                 key={mod.key}
                 type="button"
                 onClick={() => onModuleChange(mod.key)}
-                className={`flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                className={`flex items-center gap-1.5 rounded-md transition-colors ${
+                  isMobile ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'
+                } ${
                   active
                     ? 'bg-[#1890FF] text-white shadow-sm'
                     : 'bg-white text-[#595959] border border-[#F0F0F0] hover:border-[#91D5FF] hover:text-[#1890FF]'
                 }`}
               >
-                <Icon size={12} className={active ? 'text-white' : 'text-[#8C8C8C]'} />
+                <Icon size={isMobile ? 12 : 14} className={active ? 'text-white' : 'text-[#8C8C8C]'} />
                 <span>{mod.label}</span>
               </button>
             )
@@ -306,7 +318,7 @@ function FabricDetailPanel({
       </div>
 
       <div
-        className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${isMobile ? 'px-4 py-4' : 'px-5 py-4'}`}
+        className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${isMobile ? 'px-4 py-4' : 'px-6 py-5'}`}
       >
         {activeModule === 'coreFeatures' ? (
           renderModuleContent()
@@ -333,25 +345,32 @@ export default function FabricKnowledge({
   initialFabricId,
 }: FabricKnowledgeProps) {
   const isMobile = useIsMobile()
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedParent, setSelectedParent] = useState('all')
+  const [selectedSub, setSelectedSub] = useState('all')
   const [selectedFabric, setSelectedFabric] = useState<FabricData | null>(null)
   const [activeModule, setActiveModule] = useState('coreFeatures')
   const [showTechBg, setShowTechBg] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
 
-  const filteredFabrics = useMemo(() => {
-    if (selectedCategory === 'all') return fabricList
-    return fabricList.filter((f) => f.category === selectedCategory)
-  }, [selectedCategory])
+  const fabricList = fabricService.list()
+  const subCounts = useMemo(() => countFabricsBySubcategory(fabricList), [fabricList])
+  const subFilters = useMemo(
+    () => getSubcategoriesForParent(selectedParent),
+    [selectedParent],
+  )
+
+  const filteredFabrics = useMemo(
+    () => fabricList.filter((f) => fabricMatchesCategoryFilter(f, selectedParent, selectedSub)),
+    [fabricList, selectedParent, selectedSub],
+  )
 
   useEffect(() => {
     if (initialFabricId == null) return
-    const fabric = fabricList.find((f) => f.id === initialFabricId)
+    const fabric = fabricService.list().find((f) => f.id === initialFabricId)
     if (!fabric) return
-    const cat = fabricCategories.find(
-      (c) => c.key === fabric.category || c.label === fabric.category,
-    )
-    setSelectedCategory(cat?.key ?? 'all')
+    const sub = resolveFabricSubCategory(fabric)
+    setSelectedSub(sub)
+    setSelectedParent(getFabricParentKey(sub) ?? 'all')
     setSelectedFabric(fabric)
     setActiveModule('coreFeatures')
     if (isMobile) setDetailOpen(true)
@@ -377,7 +396,7 @@ export default function FabricKnowledge({
       type: 'fabric',
       id: f.id,
       title: f.fabricName,
-      subtitle: f.category,
+      subtitle: getFabricSubcategoryLabel(resolveFabricSubCategory(f)),
     })
     if (isMobile) setDetailOpen(true)
   }
@@ -403,48 +422,141 @@ export default function FabricKnowledge({
       }
     : null
 
-  return (
-    <>
-      <div
-        className={`flex flex-col md:flex-row gap-3 md:flex-1 md:min-h-0 md:h-full ${className}`}
-      >
-        <div className="w-full md:w-[260px] lg:w-[280px] md:flex-shrink-0 flex flex-col gap-2 md:min-h-0 md:max-h-full">
-          <div className="bg-white rounded-lg p-2.5 shrink-0">
-            <div className="flex flex-wrap gap-1.5">
-              {fabricCategories.map((cat) => (
-                <button
-                  key={cat.key}
+  const filterPanel = (compact?: boolean) => (
+    <div
+      className={`overflow-y-auto overscroll-contain space-y-2.5 ${
+        compact ? 'p-2.5 max-h-[8rem]' : 'p-3 md:p-3.5 max-h-[8rem] md:max-h-none'
+      }`}
+    >
+      <div>
+        <p className="text-[11px] md:text-xs text-[#8C8C8C] mb-1.5 px-0.5 font-medium">纤维类型</p>
+        <div className="flex flex-wrap gap-1.5 md:gap-2">
+          <button
                   type="button"
-                  className={`app-filter-chip px-3 py-1.5 rounded-full text-xs transition-colors ${
-                    selectedCategory === cat.key
+                  className={`app-filter-chip px-3 py-1.5 md:px-3.5 md:py-2 rounded-full text-xs md:text-[13px] transition-colors ${
+                    selectedParent === 'all'
                       ? 'bg-[#1890FF] text-white'
                       : 'bg-[#F5F5F5] text-[#595959] hover:bg-[#E6F7FF] hover:text-[#1890FF]'
                   }`}
                   onClick={() => {
-                    setSelectedCategory(cat.key)
+                    setSelectedParent('all')
+                    setSelectedSub('all')
                     setSelectedFabric(null)
                     setDetailOpen(false)
                   }}
                 >
-                  {cat.label}
+                  全部
                 </button>
-              ))}
-            </div>
-          </div>
+                {FABRIC_CATEGORY_TREE.map((group) => {
+                  const count = group.children.reduce(
+                    (sum, c) => sum + (subCounts.get(c.key) ?? 0),
+                    0,
+                  )
+                  return (
+                    <button
+                      key={group.key}
+                      type="button"
+                      className={`app-filter-chip px-3 py-1.5 md:px-3.5 md:py-2 rounded-full text-xs md:text-[13px] transition-colors ${
+                        selectedParent === group.key
+                          ? 'bg-[#1890FF] text-white'
+                          : 'bg-[#F5F5F5] text-[#595959] hover:bg-[#E6F7FF] hover:text-[#1890FF]'
+                      }`}
+                      onClick={() => {
+                        setSelectedParent(group.key)
+                        setSelectedSub('all')
+                        setSelectedFabric(null)
+                        setDetailOpen(false)
+                      }}
+                    >
+                      {group.label}
+                      <span className="ml-1 opacity-75">({count})</span>
+                    </button>
+                  )
+                })}
+        </div>
+      </div>
+      <div>
+        <p className="text-[11px] md:text-xs text-[#8C8C8C] mb-1.5 px-0.5 font-medium">面料品类</p>
+        <div className="flex flex-wrap gap-1.5 md:gap-2">
+                <button
+                  type="button"
+                  className={`app-filter-chip px-2.5 py-1 md:px-3 md:py-1.5 rounded-full text-[11px] md:text-xs transition-colors ${
+                    selectedSub === 'all'
+                      ? 'bg-[#E6F7FF] text-[#1890FF] ring-1 ring-[#91D5FF]'
+                      : 'bg-[#FAFAFA] text-[#595959] border border-[#F0F0F0] hover:border-[#91D5FF]'
+                  }`}
+                  onClick={() => {
+                    setSelectedSub('all')
+                    setSelectedFabric(null)
+                    setDetailOpen(false)
+                  }}
+                >
+                  全部品类
+                </button>
+                {subFilters.map((sub) => {
+                  const count = subCounts.get(sub.key) ?? 0
+                  return (
+                    <button
+                      key={sub.key}
+                      type="button"
+                      className={`app-filter-chip px-2.5 py-1 md:px-3 md:py-1.5 rounded-full text-[11px] md:text-xs transition-colors ${
+                        selectedSub === sub.key
+                          ? 'bg-[#E6F7FF] text-[#1890FF] ring-1 ring-[#91D5FF]'
+                          : count === 0
+                            ? 'bg-[#FAFAFA] text-[#BFBFBF] border border-dashed border-[#E8E8E8]'
+                            : 'bg-[#FAFAFA] text-[#595959] border border-[#F0F0F0] hover:border-[#91D5FF]'
+                      }`}
+                      onClick={() => {
+                        if (selectedParent === 'all') {
+                          const parent = getFabricParentKey(sub.key)
+                          if (parent) setSelectedParent(parent)
+                        }
+                        setSelectedSub(sub.key)
+                        setSelectedFabric(null)
+                        setDetailOpen(false)
+                      }}
+                    >
+                      {sub.label}
+                      <span className="ml-0.5 opacity-70">({count})</span>
+                    </button>
+                  )
+                })}
+        </div>
+      </div>
+    </div>
+  )
 
-          <div className="bg-white rounded-lg flex-1 overflow-hidden flex flex-col min-h-[200px] md:min-h-0">
-            <div className="px-3 py-2 border-b border-[#F0F0F0] shrink-0">
-              <span className="text-sm font-medium text-[#262626]">面料列表</span>
-              <span className="text-xs text-[#8C8C8C] ml-2">({filteredFabrics.length})</span>
+  return (
+    <>
+      <div className={`flex flex-col flex-1 min-h-0 h-full overflow-hidden gap-2 md:gap-2.5 ${className}`}>
+        <div className="md:hidden shrink-0 bg-white rounded-lg border border-[#F0F0F0] overflow-hidden">
+          {filterPanel(true)}
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-2.5 md:gap-3 flex-1 min-h-0 h-full overflow-hidden">
+          <div className="w-full md:w-[min(38%,420px)] lg:w-[440px] md:shrink-0 flex flex-col min-h-0 gap-2 md:gap-2.5 max-md:max-h-[min(56vh,24rem)] md:h-full">
+            <div className="hidden md:block shrink-0 bg-white rounded-lg border border-[#F0F0F0] overflow-hidden max-h-[min(42%,13.5rem)] min-h-0">
+              {filterPanel()}
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5">
+
+            <div className="bg-white rounded-lg border border-[#F0F0F0] flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="px-3.5 py-2.5 border-b border-[#F0F0F0] shrink-0 bg-white">
+                <span className="text-sm md:text-[15px] font-medium text-[#262626]">面料列表</span>
+                <span className="text-xs md:text-sm text-[#8C8C8C] ml-2">({filteredFabrics.length})</span>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2 space-y-1">
+              {filteredFabrics.length === 0 && (
+                <p className="text-xs text-[#8C8C8C] text-center py-8 px-2">
+                  该品类下暂无面料，可切换其他品类查看
+                </p>
+              )}
               {filteredFabrics.map((f) => {
                 const isSelected = selectedFabric?.id === f.id
                 return (
                   <button
                     key={f.id}
                     type="button"
-                    className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors ${
+                    className={`w-full text-left px-3 py-2.5 md:py-3 rounded-lg transition-colors ${
                       isSelected
                         ? 'bg-[#E6F7FF] text-[#1890FF] ring-1 ring-[#91D5FF]'
                         : 'text-[#595959] hover:bg-[#F5F5F5]'
@@ -452,31 +564,32 @@ export default function FabricKnowledge({
                     onClick={() => openFabricDetail(f)}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium">{f.fabricName}</span>
+                      <span className="text-sm md:text-[15px] font-medium leading-snug">{f.fabricName}</span>
                       <span
                         className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${
                           isSelected ? 'bg-white/80 text-[#1890FF]' : 'bg-[#F5F5F5] text-[#8C8C8C]'
                         }`}
                       >
-                        {f.category}
+                        {getFabricSubcategoryLabel(resolveFabricSubCategory(f))}
                       </span>
                     </div>
-                    <p className="text-xs mt-1 truncate opacity-80">{f.fabricCode}</p>
+                    <p className="text-xs md:text-[13px] mt-1 truncate opacity-80">{f.fabricCode}</p>
                   </button>
                 )
               })}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="hidden md:flex flex-1 min-w-0 min-h-0 bg-white rounded-lg flex-col overflow-hidden">
-          {detailPanelProps ? (
-            <FabricDetailPanel {...detailPanelProps} />
-          ) : (
-            <div className="flex flex-1 items-center justify-center text-sm text-[#8C8C8C]">
-              请选择面料查看详情
-            </div>
-          )}
+          <div className="hidden md:flex flex-1 min-w-0 min-h-0 h-full bg-white rounded-lg border border-[#F0F0F0] flex-col overflow-hidden">
+            {detailPanelProps ? (
+              <FabricDetailPanel {...detailPanelProps} />
+            ) : (
+              <div className="flex flex-1 min-h-0 items-center justify-center text-sm text-[#8C8C8C]">
+                请选择面料查看详情
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

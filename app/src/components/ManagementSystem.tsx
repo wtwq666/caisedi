@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
-import { FileText, ScrollText, Search, X, Tag, BookOpen, Hash, Download, Eye } from 'lucide-react'
-import { managementDocs, managementCategories } from '../data/managementData'
-import type { ManagementDoc } from '../data/managementData'
+import { FileText, ScrollText, Search, X, Tag, BookOpen, Hash, Eye } from 'lucide-react'
+import { resolveDocumentFileUrl } from '../lib/getAssetUrl'
+import { managementCategories } from '../data/managementData'
+import { useDocuments } from '../hooks/useDocuments'
+import type { DocumentDto as ManagementDoc } from '../services/documentService'
 import DocViewer from './DocViewer'
 import MobileDetailBackBar from './MobileDetailBackBar'
 import { useMasterDetailMobile } from '../hooks/use-master-detail-mobile'
@@ -17,6 +19,7 @@ const fileColors: Record<string, { bg: string; text: string }> = {
 }
 
 export default function ManagementSystem() {
+  const { docs: managementDocs } = useDocuments('management')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchText, setSearchText] = useState('')
   const [selectedDoc, setSelectedDoc] = useState<ManagementDoc | null>(null)
@@ -31,9 +34,7 @@ export default function ManagementSystem() {
         doc.tags.some((t) => t.includes(searchText))
       return matchCategory && matchSearch
     })
-  }, [selectedCategory, searchText])
-
-  const downloadUrl = (doc: ManagementDoc) => `/training/${encodeURIComponent(doc.filename)}`
+  }, [managementDocs, selectedCategory, searchText])
 
   const hasSelection = !!selectedDoc
   const { showList, showDetail, isMobile, closeDetail } = useMasterDetailMobile(
@@ -185,20 +186,13 @@ export default function ManagementSystem() {
             {/* Actions */}
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
               <button
+                type="button"
                 className="flex items-center gap-2 px-5 py-2.5 bg-[#1890FF] text-white text-sm rounded hover:bg-[#096DD9] transition-colors"
                 onClick={() => setPreviewDoc(selectedDoc)}
               >
                 <Eye size={16} />
                 在线预览
               </button>
-              <a
-                href={downloadUrl(selectedDoc)}
-                download
-                className="flex items-center gap-2 px-5 py-2.5 text-[#1890FF] border border-[#1890FF] text-sm rounded hover:bg-[#E6F7FF] transition-colors"
-              >
-                <Download size={16} />
-                下载文档
-              </a>
             </div>
 
             {/* Content Overview */}
@@ -221,7 +215,8 @@ export default function ManagementSystem() {
 
       {previewDoc && (
         <DocViewer
-          fileUrl={downloadUrl(previewDoc)}
+          key={resolveDocumentFileUrl(previewDoc)}
+          fileUrl={resolveDocumentFileUrl(previewDoc)}
           fileType={previewDoc.fileType as 'pdf' | 'docx'}
           title={previewDoc.title}
           onClose={() => setPreviewDoc(null)}
